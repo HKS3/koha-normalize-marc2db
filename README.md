@@ -1,14 +1,31 @@
 # koha-normalize-marc2db
 koha-plugin to normalize MARC21 data to database tables
 
+This plugin (Koha::Plugin::HKS3::NormalizeMARC2DB) aims to normalize MARC21 XML metadata from the biblio_metadata.metadata table into structured MySQL database tables. Currently, MARC21 XML is stored as a single XML blob, making advanced querying, reporting, and integration difficult.
+
+This plugin introduces an automatic normalization step triggered by the after_biblio_action hook whenever metadata is added or modified. It splits MARC XML into normalized relational tables fully supporting repeatable fields, subfields, and indicators.
+
+Advantages:
+
+Significantly simplifies complex querying and reporting of MARC21 data.
+
+Enhances data integrity and consistency.
+
+Facilitates integration with external reporting tools, analytics, and applications.
+
+Improves database performance for MARC metadata queries.
+
+Provides clear and structured access to MARC data elements.
+
+This approach aligns with best practices for database normalization and can substantially enhance Koha's extensibility and interoperability.
+
+see https://bugs.koha-community.org/bugzilla3/show_bug.cgi?id=39557
+
 # example SQL
 
 select biblionumber, f.sequence field_order, s.sequence subfield_order, tag, indicator1, indicator2, code, value from nm2db_fields f join nm2db_subfields s on f.id = s.field_id where biblionumber = 11 order by tag;
 
-select biblionumber, tag, indicator1, indicator2, code, value from nm2db_fields f join nm2db_subfields s on f.id = s.field_id where record_identifier = 11 order by tag;
-
-
-# space ie storage requirements
+# disk space ie storage requirements
 
 SELECT  
 (select count(*) from biblio) number_of_biblios,
