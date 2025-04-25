@@ -10,7 +10,7 @@ use Koha::Plugin::HKS3::NormalizeMARC2DB;
 my $plugin =  Koha::Plugin::HKS3::NormalizeMARC2DB->new();
 # $plugin->install();
 
-# my $sql = 'select biblionumber from biblio_metadata where biblionumber < 1000';
+# my $sql = 'select biblionumber from biblio_metadata where biblionumber = 11';
 my $sql = 'select biblionumber from biblio_metadata';
 my $sth = $dbh->prepare($sql);
 $sth->execute();
