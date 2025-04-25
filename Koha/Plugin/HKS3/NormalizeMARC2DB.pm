@@ -24,7 +24,7 @@ use MARC::Field;
 use MARC::File::XML (BinaryEncoding => 'utf8');
 use XML::Twig;
 
-our $VERSION = "0.10";
+our $VERSION = "0.11";
 
 our $metadata = {
     name            => 'Normalize MARC to DB',
@@ -56,6 +56,18 @@ sub new {
     $self->{cgi} = CGI->new();
 
     return $self;
+}
+
+=head3 background_tasks
+
+Plugin hook used to register new background_job types
+
+=cut
+sub background_tasks {
+    return {
+        # task code  => implementing class
+        normalize_all => 'Koha::Plugin::HKS3::NormalizeMARC2DB::Task::NormalizeAll',
+    };
 }
 
 sub install {
