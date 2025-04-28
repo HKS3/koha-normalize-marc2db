@@ -18,11 +18,13 @@ package Koha::Plugin::HKS3::NormalizeMARC2DB;
 use Modern::Perl;
 use base qw(Koha::Plugins::Base);
 use C4::Context;
-use Try::Tiny qw(catch try);
 use MARC::Record;
 use MARC::Field;
 use MARC::File::XML (BinaryEncoding => 'utf8');
 use XML::Twig;
+
+use Koha::Plugin::HKS3::NormalizeMARC2DB::Normalizer;
+use Koha::Plugin::HKS3::NormalizeMARC2DB::NormalizeAll;
 
 our $VERSION = "0.11";
 
@@ -30,6 +32,7 @@ our $metadata = {
     name            => 'Normalize MARC to DB',
     author          => 'Mark Hofstetter',
     description     => 'Normalize MARC XML into MySQL tables',
+    namespace       => 'marc2db',
     date_authored   => '2025-04-01',
     date_updated    => '2025-04-18',
     minimum_version => '23.11',
@@ -66,8 +69,16 @@ Plugin hook used to register new background_job types
 sub background_tasks {
     return {
         # task code  => implementing class
-        normalize_all => 'Koha::Plugin::HKS3::NormalizeMARC2DB::Task::NormalizeAll',
+        normalizeall => 'Koha::Plugin::HKS3::NormalizeMARC2DB::NormalizeAll',
     };
+}
+
+sub tool {
+    my ( $self ) = @_;
+
+    Koha::Plugin::HKS3::NormalizeMARC2DB::NormalizeAll->new->enqueue();
+
+    print $self->{'cgi'}->redirect("/cgi-bin/koha/admin/background_jobs.pl");
 }
 
 sub install {
@@ -112,7 +123,6 @@ sub uninstall {
     return 1;
 }
 
-
 sub after_biblio_action {
     my ($self, $params) = @_;
 
@@ -120,7 +130,7 @@ sub after_biblio_action {
     my $biblio_id = $params->{biblio_id};
 
     if ($action eq 'add' || $action eq 'modify' || $action eq 'create') {
-        $self->normalize_biblio($biblio_id);
+        Koha::Plugin::HKS3::NormalizeMARC2DB::Normalizer->normalize_biblio($biblio_id);
     } elsif ($action eq 'delete') {
         $self->delete_normalized_biblio($biblio_id);
     }
@@ -133,63 +143,6 @@ sub delete_normalized_biblio {
     my $dbh = C4::Context->dbh;
     $dbh->do("delete from nm2db_fields where biblionumber= ?", undef, $biblionumber);
 }
-
-sub normalize_biblio {
-    my ($self, $biblionumber) = @_;
-    my $dbh = C4::Context->dbh;
-
-    my ($marcxml) = $dbh->selectrow_array("SELECT metadata FROM biblio_metadata WHERE biblionumber=?", undef, $biblionumber);
-    return unless $marcxml;
-
-    my $record;
-    eval {
-        $record = MARC::Record->new_from_xml($marcxml, 'UTF-8');    
-    };
-    
-    return unless $record;
-
-    # delete cascading
-    $dbh->do("delete from nm2db_fields where biblionumber= ?", undef, $biblionumber) ;
-
-    $dbh->do("INSERT INTO nm2db_fields (biblionumber, tag, indicator1, indicator2, sequence)
-            VALUES (?, ?, ?, ?, ?)",
-            undef, $biblionumber, 'leader', undef, undef, 0);
-    my $field_id = $dbh->{mysql_insertid};
-
-    $dbh->do("INSERT INTO nm2db_subfields (field_id, code, value, sequence)
-                VALUES (?, ?, ?, ?)",
-                undef, $field_id, '', $record->leader(), 1);
-
-    my $field_seq = 0;
-    
-    foreach my $field ($record->fields()) {
-        $field_seq++;
-        my ($tag, $ind1, $ind2) = ($field->tag, $field->indicator(1), $field->indicator(2));
-
-        $dbh->do("INSERT INTO nm2db_fields (biblionumber, tag, indicator1, indicator2, sequence)
-                VALUES (?, ?, ?, ?, ?)",
-                undef, $biblionumber, $tag, $ind1, $ind2, $field_seq);
-        my $field_id = $dbh->{mysql_insertid};
-
-        my $subfield_seq = 0;
-        if ($field->is_control_field()) {
-            $dbh->do("INSERT INTO nm2db_subfields (field_id, code, value, sequence)
-                    VALUES (?, ?, ?, ?)",
-                    undef, $field_id, '', $field->data(), 1);
-        } else {
-            foreach my $subfield ($field->subfields()) {
-                $subfield_seq++;
-                my ($code, $value) = @$subfield;
-                $dbh->do("INSERT INTO nm2db_subfields (field_id, code, value, sequence)
-                        VALUES (?, ?, ?, ?)",
-                        undef, $field_id, $code, $value, $subfield_seq);
-            }
-        }
-    }
-
-    return 1;
-}
-
 
 sub generate_marcxml {
     my ($self, $biblionumber) = @_;
@@ -242,23 +195,6 @@ sub generate_marcxml {
     }
 
     return $record->as_xml_record;
-}
-
-# Job to normalize all existing biblio records
-sub job_normalize_all {
-    my ($self) = @_;
-    my $dbh = C4::Context->dbh;
-    my $sth = $dbh->prepare("SELECT biblionumber FROM biblio");
-    $sth->execute;
-    while (my ($biblionumber) = $sth->fetchrow_array) {
-        try {
-            $self->normalize_biblio($biblionumber);
-        }
-        catch {
-            warn "Error normalizing biblionumber $biblionumber: $_";
-        };
-    }
-    return 1;
 }
 
 1;
