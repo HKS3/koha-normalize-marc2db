@@ -1,4 +1,4 @@
-package Koha::Plugin::HKS3::NormalizeMARC2DB::NormalizeAll;
+package Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::NormalizeAll;
 
 # This file is part of Koha.
 #
@@ -16,78 +16,49 @@ package Koha::Plugin::HKS3::NormalizeMARC2DB::NormalizeAll;
 # along with Koha; if not, see <http://www.gnu.org/licenses>.
 
 use Modern::Perl;
+use Try::Tiny qw(catch try);
 
 use base 'Koha::BackgroundJob';
 
-=head1 NAME
-
-This is a subclass of Koha::BackgroundJob.
-
-=head1 API
-
-=head2 Class methods
-
-=head3 job_type
-
-Define the job type of this job: 
-
-=cut
+use Koha::Plugin::HKS3::NormalizeMARC2DB::Normalizer;
 
 sub job_type {
     return 'plugin_marc2db_normalizeall';
 }
-
-=head3 process
-
-Process the modification.
-
-=cut
 
 sub process {
     my ( $self, $args ) = @_;
 
     $self->start;
 
-    my @messages;
-    my $report = {
-        total_greets  => $self->size,
-        total_success => 0,
-    };
+    my $dbh = C4::Context->dbh;
+    my $sth = $dbh->prepare("SELECT biblionumber FROM biblio");
+    $sth->execute;
 
-    foreach my $step ( 1 .. $self->size ) {
+    $self->set({ size => $sth->rows });
 
-        warn "Greeting: Hola! ($step)";
+    my @errors;
 
-        push @messages,
-            {
-            type => 'success',
-            code => 'greeted',
-            };
-
-        $report->{total_success}++;
-
-        $self->step;
+    while (my ($biblionumber) = $sth->fetchrow_array) {
+        try {
+            Koha::Plugin::HKS3::NormalizeMARC2DB::Normalizer->normalize_biblio($biblionumber);
+        }
+        catch {
+            warn "Error normalizing biblionumber $biblionumber: $_";
+            push @errors, { biblionumber => $biblionumber, message => $_ };
+        };
+        $self->step();
     }
 
-    my $data = $self->decoded_data;
-    $data->{messages} = \@messages;
-    $data->{report}   = $report;
-
-    $self->finish($data);
+    $self->finish({ messages => \@errors });
 }
-
-=head3 enqueue
-
-Enqueue the new job
-
-=cut
 
 sub enqueue {
     my ( $self, $args ) = @_;
 
     $self->SUPER::enqueue(
         {
-            job_size => $args->{size} // 5,
+            job_size => 1,
             job_args => {},
         }
     );
