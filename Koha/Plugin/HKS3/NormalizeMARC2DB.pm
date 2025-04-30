@@ -94,6 +94,8 @@ sub install {
         indicator1 CHAR(1),
         indicator2 CHAR(1),
         sequence INT DEFAULT 0,
+        type CHAR(1) default 'b',
+        changed INT DEFAULT 0,
         FOREIGN KEY (biblionumber) REFERENCES biblio(biblionumber) ON DELETE CASCADE
     ); ");
 
