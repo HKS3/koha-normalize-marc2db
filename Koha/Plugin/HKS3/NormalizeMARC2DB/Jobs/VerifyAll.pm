@@ -20,8 +20,6 @@ use Try::Tiny qw(catch try);
 
 use base 'Koha::BackgroundJob';
 
-use XML::SemanticDiff;
-
 sub job_type {
     return 'plugin_marc2db_verifyall';
 }
@@ -30,6 +28,16 @@ sub process {
     my ( $self, $args ) = @_;
 
     $self->start;
+
+    # Try this in runtime since it's not part of the stock Koha install
+    my $failed;
+    try {
+        require 'XML/SemanticDiff.pm'; ## no critic
+    } catch {
+        $self->finish({ messages => [{ message => "Required module XML::SemanticDiff not installed" }] });
+        $failed = 1;
+    };
+    return if $failed;
 
     my $dbh = C4::Context->dbh;
     my $sth = $dbh->prepare('select biblionumber, metadata from biblio_metadata');
