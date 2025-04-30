@@ -55,8 +55,14 @@ sub new {
 
 sub background_tasks {
     return {
-        normalizeall => 'Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::NormalizeAll',
-        verifyall => 'Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::VerifyAll',
+        normalizeall => {
+            class => 'Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::NormalizeAll',
+            name => "Normalize all biblio records' MARC into a database form",
+        },
+        verifyall => {
+            class => 'Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::VerifyAll',
+            name => "Verify that all normalized biblio records generate the same MARCXML they originally had",
+        },
     };
 }
 
