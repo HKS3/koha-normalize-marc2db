@@ -78,4 +78,9 @@ sub enqueue {
     );
 }
 
+unless (caller) {
+    my $id = __PACKAGE__->new->enqueue();
+    print "Queued " . __PACKAGE__ . ", job ID: $id\n";
+}
+
 1;
