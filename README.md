@@ -21,9 +21,59 @@ This approach aligns with best practices for database normalization and can subs
 
 see https://bugs.koha-community.org/bugzilla3/show_bug.cgi?id=39557
 
-# example SQL
+# example SQL (using ktd)
 
+Get all Field + Subfields of a given biblionumber
+
+```
 select biblionumber, f.sequence field_order, s.sequence subfield_order, tag, indicator1, indicator2, code, value from nm2db_fields f join nm2db_subfields s on f.id = s.field_id where biblionumber = 11 order by tag;
+```
+
+(part) of the result
+
+```
++---------+-----------+--------+------------+------------+------+--------------------------------+
+| f_order | sub_order | tag    | indicator1 | indicator2 | code | substr(value,1,30)             |
++---------+-----------+--------+------------+------------+------+--------------------------------+
+|       1 |         1 | 001    | NULL       | NULL       |      | 12011929                       |
+|       2 |         1 | 005    | NULL       | NULL       |      | 20200421093816.0               |
+|       3 |         1 | 008    | NULL       | NULL       |      | 000518s2000    ch a     b    0 |
+|       4 |         1 | 010    |            |            | a    |    00041664                    |
+|       5 |         1 | 020    |            |            | a    | 1565924193                     |
+|       6 |         1 | 040    |            |            | a    | DLC                            |
+...
+|      12 |         1 | 250    |            |            | a    | 2nd ed.                        |
+|      13 |         1 | 260    |            |            | a    | Beijing ;                      |
+|      13 |         2 | 260    |            |            | a    | Cambridge, Mass. :             |
+|      13 |         3 | 260    |            |            | b    | O'Reilly,                      |
+|      13 |         4 | 260    |            |            | c    | 2000.                          |
+|      14 |         1 | 300    |            |            | a    | xv, 451 p.                     |
+|      14 |         2 | 300    |            |            | b    | ill.                           |
+|      14 |         3 | 300    |            |            | c    | 24 cm.                         |
+|      15 |         1 | 504    |            |            | a    | Includes bibliographical refer |
+|      16 |         1 | 650    |            | 0          | a    | Perl (Computer program languag |
+```
+but you could also do things which would be rather hard with xpath, for example give me the 10 bibliorecords with the most fields
+```
+select biblionumber, count(*) c from nm2db_fields f join nm2db_subfields s on f.id = s.field_id group by biblionumber order by c desc limit 10;
++--------------+-----+
+| biblionumber | c   |
++--------------+-----+
+|          248 | 189 |
+|          188 | 183 |
+|          235 | 163 |
+|          233 | 152 |
+|          208 | 145 |
+|          247 | 140 |
+|          209 | 126 |
+|           48 | 124 |
+|          169 | 119 |
+|          174 | 117 |
++--------------+-----+
+```
+
+
+
 
 # disk space ie storage requirements
 ```
