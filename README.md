@@ -71,8 +71,25 @@ select biblionumber, count(*) c from nm2db_fields f join nm2db_subfields s on f.
 |          174 | 117 |
 +--------------+-----+
 ```
-
-
+or get the 10 (via 440a) most referenced Series
+```
+MariaDB [koha_kohadev]> select value, count(*) c from nm2db_fields f join nm2db_subfields s on f.id = s.field_id where tag = '440' and code = 'a' group by value order by c desc limit 10;
++----------------------------------------------------+---+
+| value                                              | c |
++----------------------------------------------------+---+
+| Penguin classics                                   | 6 |
+| Loeb classical library ;                           | 3 |
+| Scriptorum classicorum bibliotheca Oxoniensis      | 3 |
+| Cambridge Greek and Latin classics                 | 2 |
+| Oxford world's classics                            | 2 |
+| Directors' Cuts                                    | 2 |
+| SUNY series in contemporary continental philosophy | 1 |
+| Classic commentaries on Greek and Latin texts      | 1 |
+| Maynooth medieval Irish texts,                     | 1 |
+| Pitt Press series                                  | 1 |
++----------------------------------------------------+---+
+10 rows in set (0.002 sec)
+```
 
 
 # disk space ie storage requirements
@@ -97,9 +114,7 @@ total_mb DESC
 |             83609 | nm2db_fields    |   45.58 |    40.09 |    85.67 |
 +-------------------+-----------------+---------+----------+----------+
 ```
-
-not surprisingly it uses about the same amount of space as biblio_metadata, although with the indices it uses more
-
+not surprisingly it uses about the same amount of space as biblio_metadata
 ```
 create index nm2db_subfields_ind on nm2db_subfields(value);
 create index nm2db_fields_ind on nm2db_fields (biblionumber, tag);
