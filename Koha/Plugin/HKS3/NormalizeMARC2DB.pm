@@ -86,15 +86,26 @@ sub report {
 sub install {
     my ($self) = @_;
 
+	record
+		id,
+		changed BOOL default false,
+        type enum('biblio', 'authority') default 'biblio',
+        biblionumber BIGINT,        
+        authid BIGINT,        
+        FOREIGN KEY (biblionumber) REFERENCES biblio(biblionumber) ON DELETE CASCADE
+        FOREIGN KEY (authid) REFERENCE auth_header(authid) ON DELETE CASCADE
+		-- check constraint
+		
+
     C4::Context->dbh->do( "
     CREATE TABLE IF NOT EXISTS nm2db_fields (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        biblionumber INT NOT NULL,        
+		record_id BIGINT,
         tag CHAR(6) NOT NULL,
         indicator1 CHAR(1),
         indicator2 CHAR(1),
         sequence INT DEFAULT 0,
-        FOREIGN KEY (biblionumber) REFERENCES biblio(biblionumber) ON DELETE CASCADE
+        FOREIGN KEY (record_id) REFERENCES record(id) ON DELETE CASCADE
     ); ");
 
     C4::Context->dbh->do( "
@@ -108,15 +119,19 @@ sub install {
     ); ");
 
     C4::Context->dbh->do("    
-        create index nm2db_subfields_ind on nm2db_subfields(value);
+        create index nm2db_subfields_value_ind on nm2db_subfields(value);
     ");
 
     C4::Context->dbh->do("    
-        create index nm2db_fields_ind on nm2db_fields (biblionumber, tag);
+        create index nm2db_subfields_code_ind on nm2db_subfields(code);
     ");
 
-    C4::Context->dbh->do("
-        alter table nm2db_fields add column if not exists type enum('biblio', 'authority') not null after id;
+    C4::Context->dbh->do("    
+        create index nm2db_fields_tag_ind on nm2db_fields (tag);
+    ");
+
+    C4::Context->dbh->do("    
+        create index nm2db_fields_biblionumber_ind on nm2db_fields (biblionumber, type);
     ");
 
     return 1;
