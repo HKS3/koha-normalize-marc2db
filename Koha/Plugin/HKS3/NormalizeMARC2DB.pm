@@ -86,26 +86,31 @@ sub report {
 sub install {
     my ($self) = @_;
 
-	record
-		id,
-		changed BOOL default false,
+    C4::Context->dbh->do( "
+    CREATE TABLE IF NOT EXISTS nm2db_records (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        changed BOOL default false,
         type enum('biblio', 'authority') default 'biblio',
-        biblionumber BIGINT,        
-        authid BIGINT,        
-        FOREIGN KEY (biblionumber) REFERENCES biblio(biblionumber) ON DELETE CASCADE
-        FOREIGN KEY (authid) REFERENCE auth_header(authid) ON DELETE CASCADE
-		-- check constraint
-		
+        biblionumber int(11),
+        authid BIGINT(20) unsigned,
+        FOREIGN KEY (biblionumber) REFERENCES biblio(biblionumber) ON DELETE CASCADE,
+        FOREIGN KEY (authid) REFERENCES auth_header(authid) ON DELETE CASCADE,
+        CONSTRAINT UC_Biblio UNIQUE (biblionumber),
+        CONSTRAINT UC_Auth UNIQUE (authid),
+        CONSTRAINT CHK_Biblio_Or_Auth CHECK (biblionumber is null or authid is null),
+        CONSTRAINT CHK_Biblio_Correct_Type CHECK (if(biblionumber is not null, type = 'biblio', true)),
+        CONSTRAINT CHK_Auth_Correct_Type CHECK (if(authid is not null, type = 'authority', true))
+    ); ");
 
     C4::Context->dbh->do( "
     CREATE TABLE IF NOT EXISTS nm2db_fields (
         id INT AUTO_INCREMENT PRIMARY KEY,
-		record_id BIGINT,
+        record_id INT,
         tag CHAR(6) NOT NULL,
         indicator1 CHAR(1),
         indicator2 CHAR(1),
         sequence INT DEFAULT 0,
-        FOREIGN KEY (record_id) REFERENCES record(id) ON DELETE CASCADE
+        FOREIGN KEY (record_id) REFERENCES nm2db_records(id) ON DELETE CASCADE
     ); ");
 
     C4::Context->dbh->do( "
@@ -118,6 +123,7 @@ sub install {
         FOREIGN KEY (field_id) REFERENCES nm2db_fields(id) ON DELETE CASCADE
     ); ");
 
+    # MySQL Warning: Specified key was too long; max key length is 3072 bytes
     C4::Context->dbh->do("    
         create index nm2db_subfields_value_ind on nm2db_subfields(value);
     ");
@@ -130,17 +136,13 @@ sub install {
         create index nm2db_fields_tag_ind on nm2db_fields (tag);
     ");
 
-    C4::Context->dbh->do("    
-        create index nm2db_fields_biblionumber_ind on nm2db_fields (biblionumber, type);
-    ");
-
     return 1;
 }
 
 sub uninstall {
     my ($self) = @_;
     my $dbh = C4::Context->dbh;
-    $dbh->do("DROP TABLE IF EXISTS nm2db_subfields, nm2db_fields");
+    $dbh->do("DROP TABLE IF EXISTS nm2db_subfields, nm2db_fields, nm2db_records");
     return 1;
 }
 

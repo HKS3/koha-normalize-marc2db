@@ -18,12 +18,16 @@ sub normalize_biblio {
     
     return unless $record;
 
-    # delete cascading
-    $dbh->do("delete from nm2db_fields where biblionumber= ?", undef, $biblionumber) ;
+    # ensure we have a record entry
+    $dbh->do('insert into nm2db_records (biblionumber) values (?) on duplicate key update changed = false', undef, $biblionumber);
+    my ($record_id) = $dbh->selectrow_array('select id from nm2db_records where biblionumber = ?', undef, $biblionumber);
 
-    $dbh->do("INSERT INTO nm2db_fields (type, biblionumber, tag, indicator1, indicator2, sequence)
-            VALUES ('biblio', ?, ?, ?, ?, ?)",
-            undef, $biblionumber, 'leader', undef, undef, 0);
+    # delete cascading
+    $dbh->do("delete from nm2db_fields where record_id = ?", undef, $record_id);
+
+    $dbh->do("INSERT INTO nm2db_fields (record_id, tag, indicator1, indicator2, sequence)
+            VALUES (?, ?, ?, ?, ?)",
+            undef, $record_id, 'leader', undef, undef, 0);
     my $field_id = $dbh->{mysql_insertid};
 
     $dbh->do("INSERT INTO nm2db_subfields (field_id, code, value, sequence)
@@ -36,9 +40,9 @@ sub normalize_biblio {
         $field_seq++;
         my ($tag, $ind1, $ind2) = ($field->tag, $field->indicator(1), $field->indicator(2));
 
-        $dbh->do("INSERT INTO nm2db_fields (type, biblionumber, tag, indicator1, indicator2, sequence)
-                VALUES ('biblio', ?, ?, ?, ?, ?)",
-                undef, $biblionumber, $tag, $ind1, $ind2, $field_seq);
+        $dbh->do("INSERT INTO nm2db_fields (record_id, tag, indicator1, indicator2, sequence)
+                VALUES (?, ?, ?, ?, ?)",
+                undef, $record_id, $tag, $ind1, $ind2, $field_seq);
         my $field_id = $dbh->{mysql_insertid};
 
         my $subfield_seq = 0;
@@ -65,12 +69,14 @@ sub generate_marcxml {
     my $dbh = C4::Context->dbh;
     my $record = MARC::Record->new();
 
+    my ($record_id) = $dbh->selectrow_array('select id from nm2db_records where biblionumber = ?', undef, $biblionumber);
+
     my $fields_sth = $dbh->prepare(
         "SELECT id, tag, indicator1, indicator2 FROM nm2db_fields
-         WHERE biblionumber = ?
+         WHERE record_id = ?
          ORDER BY sequence"
     );
-    $fields_sth->execute($biblionumber);
+    $fields_sth->execute($record_id);
 
     while (my $f = $fields_sth->fetchrow_hashref) {
         my $field_id = $f->{id};
