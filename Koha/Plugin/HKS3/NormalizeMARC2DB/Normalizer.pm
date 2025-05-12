@@ -21,8 +21,8 @@ sub normalize_biblio {
     # delete cascading
     $dbh->do("delete from nm2db_fields where biblionumber= ?", undef, $biblionumber) ;
 
-    $dbh->do("INSERT INTO nm2db_fields (biblionumber, tag, indicator1, indicator2, sequence)
-            VALUES (?, ?, ?, ?, ?)",
+    $dbh->do("INSERT INTO nm2db_fields (type, biblionumber, tag, indicator1, indicator2, sequence)
+            VALUES ('biblio', ?, ?, ?, ?, ?)",
             undef, $biblionumber, 'leader', undef, undef, 0);
     my $field_id = $dbh->{mysql_insertid};
 
@@ -36,8 +36,8 @@ sub normalize_biblio {
         $field_seq++;
         my ($tag, $ind1, $ind2) = ($field->tag, $field->indicator(1), $field->indicator(2));
 
-        $dbh->do("INSERT INTO nm2db_fields (biblionumber, tag, indicator1, indicator2, sequence)
-                VALUES (?, ?, ?, ?, ?)",
+        $dbh->do("INSERT INTO nm2db_fields (type, biblionumber, tag, indicator1, indicator2, sequence)
+                VALUES ('biblio', ?, ?, ?, ?, ?)",
                 undef, $biblionumber, $tag, $ind1, $ind2, $field_seq);
         my $field_id = $dbh->{mysql_insertid};
 

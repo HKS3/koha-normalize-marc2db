@@ -115,6 +115,10 @@ sub install {
         create index nm2db_fields_ind on nm2db_fields (biblionumber, tag);
     ");
 
+    C4::Context->dbh->do("
+        alter table nm2db_fields add column if not exists type enum('biblio', 'authority') not null after id;
+    ");
+
     return 1;
 }
 
