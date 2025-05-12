@@ -26,7 +26,11 @@ see https://bugs.koha-community.org/bugzilla3/show_bug.cgi?id=39557
 Get all Field + Subfields of a given biblionumber
 
 ```
-select biblionumber, f.sequence field_order, s.sequence subfield_order, tag, indicator1, indicator2, code, value from nm2db_fields f join nm2db_subfields s on f.id = s.field_id where biblionumber = 11 order by tag;
+select r.biblionumber, f.sequence field_order, s.sequence subfield_order, tag, indicator1, indicator2, code, value from nm2db_fields f
+    join nm2db_subfields s on f.id = s.field_id
+    join nm2db_records r on r.id = f.record_id
+    where r.biblionumber = 11 order by tag
+;
 ```
 
 (part) of the result
@@ -55,7 +59,11 @@ select biblionumber, f.sequence field_order, s.sequence subfield_order, tag, ind
 ```
 but you could also do things which would be rather hard with xpath, for example give me the 10 bibliorecords with the most fields
 ```
-select biblionumber, count(*) c from nm2db_fields f join nm2db_subfields s on f.id = s.field_id group by biblionumber order by c desc limit 10;
+select r.biblionumber, count(*) c from nm2db_fields f
+    join nm2db_subfields s on f.id = s.field_id
+    join nm2db_records r on r.id = f.record_id
+    group by record_id order by c desc limit 10
+;
 +--------------+-----+
 | biblionumber | c   |
 +--------------+-----+
