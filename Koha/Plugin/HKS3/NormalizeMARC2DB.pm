@@ -161,6 +161,21 @@ sub after_biblio_action {
     return;
 }
 
+sub after_authority_action {
+    my ($self, $params) = @_;
+
+    my $action = $params->{action};
+    my $authority_id = $params->{authority_id};
+
+    if ($action eq 'add' || $action eq 'modify' || $action eq 'create') {
+        Koha::Plugin::HKS3::NormalizeMARC2DB::Normalizer->normalize_authority($authority_id);
+    } elsif ($action eq 'delete') {
+        $self->delete_normalized_authority($authority_id);
+    }
+
+    return;
+}
+
 sub delete_normalized_biblio {
     my ($self, $biblionumber) = @_;
     my $dbh = C4::Context->dbh;

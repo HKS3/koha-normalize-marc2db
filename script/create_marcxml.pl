@@ -23,8 +23,9 @@ my $xml;
 my $diff = XML::SemanticDiff->new();
 foreach my $row (@$rows) {
     printf "%12d \n", $row->{biblionumber};
+    my ($record_id) = $dbh->selectrow_array('select id from nm2db_records where biblionumber = ?', undef, $biblionumber);
     try {
-        $xml = $plugin->generate_marcxml($row->{biblionumber});
+        $xml = $plugin->generate_marcxml($record_id);
     } catch {
         warn $_;
     };

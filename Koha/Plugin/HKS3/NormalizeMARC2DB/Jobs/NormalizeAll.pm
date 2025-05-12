@@ -32,20 +32,34 @@ sub process {
     $self->start;
 
     my $dbh = C4::Context->dbh;
-    my $sth = $dbh->prepare("SELECT biblionumber FROM biblio");
-    $sth->execute;
+    my $sth_biblios = $dbh->prepare("SELECT biblionumber FROM biblio");
+    $sth_biblios->execute;
 
-    $self->set({ size => $sth->rows });
+    my $sth_authorities = $dbh->prepare("SELECT authid FROM auth_header");
+    $sth_authorities->execute;
+
+    $self->set({ size => $sth_biblios->rows + $sth_authorities->rows });
 
     my @errors;
 
-    while (my ($biblionumber) = $sth->fetchrow_array) {
+    while (my ($biblionumber) = $sth_biblios->fetchrow_array) {
         try {
             Koha::Plugin::HKS3::NormalizeMARC2DB::Normalizer->normalize_biblio($biblionumber);
         }
         catch {
             warn "Error normalizing biblionumber $biblionumber: $_";
             push @errors, { biblionumber => $biblionumber, message => $_ };
+        };
+        $self->step();
+    }
+
+    while (my ($authid) = $sth_authorities->fetchrow_array) {
+        try {
+            Koha::Plugin::HKS3::NormalizeMARC2DB::Normalizer->normalize_authority($authid);
+        }
+        catch {
+            warn "Error normalizing authority $authid: $_";
+            push @errors, { authid => $authid, message => $_ };
         };
         $self->step();
     }

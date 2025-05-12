@@ -5,7 +5,7 @@
     [% IF job.status == 'finished' %]
         [% IF report %]
             <div class="dialog message">
-                All biblio records have been successfully normalized.
+                All records have been successfully normalized.
             </div>
         [% ELSE %]
             <div class="dialog message">
@@ -27,7 +27,13 @@
     [% FOR error IN job.messages %]
         <div class="dialog message">
             <i class="fa fa-exclamation error"></i>
-            Error normalizing biblio#[% error.biblionumber %]: 
+            [% IF error.biblionumber %]
+                Error normalizing biblio#[% error.biblionumber %]:
+            [% ELSIF error.authid %]
+                Error normalizing auth#[% error.authid %]:
+            [% ELSE %]
+                Error:
+            [% END %]
             <code> [% error.message %] </code>
         </div>
     [% END %]

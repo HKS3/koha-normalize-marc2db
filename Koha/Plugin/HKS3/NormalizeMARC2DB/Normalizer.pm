@@ -4,6 +4,27 @@ use MARC::Record;
 
 use C4::Context;
 
+sub normalize_authority {
+    my ($self, $authid) = @_;
+    my $dbh = C4::Context->dbh;
+
+    my ($marcxml) = $dbh->selectrow_array("SELECT marcxml FROM auth_header WHERE authid=?", undef, $authid);
+    return unless $marcxml;
+
+    my $record;
+    eval {
+        $record = MARC::Record->new_from_xml($marcxml, 'UTF-8');
+    };
+
+    return unless $record;
+
+    # ensure we have a record entry
+    $dbh->do('insert into nm2db_records (authid, type) values (?, "authority") on duplicate key update changed = false', undef, $authid);
+    my ($record_id) = $dbh->selectrow_array('select id from nm2db_records where authid = ?', undef, $authid);
+
+    return $self->normalize_record($record_id, $record);
+}
+
 sub normalize_biblio {
     my ($self, $biblionumber) = @_;
     my $dbh = C4::Context->dbh;
@@ -13,14 +34,21 @@ sub normalize_biblio {
 
     my $record;
     eval {
-        $record = MARC::Record->new_from_xml($marcxml, 'UTF-8');    
+        $record = MARC::Record->new_from_xml($marcxml, 'UTF-8');
     };
-    
+
     return unless $record;
 
     # ensure we have a record entry
     $dbh->do('insert into nm2db_records (biblionumber) values (?) on duplicate key update changed = false', undef, $biblionumber);
     my ($record_id) = $dbh->selectrow_array('select id from nm2db_records where biblionumber = ?', undef, $biblionumber);
+
+    return $self->normalize_record($record_id, $record);
+}
+
+sub normalize_record {
+    my ($self, $record_id, $record) = @_;
+    my $dbh = C4::Context->dbh;
 
     # delete cascading
     $dbh->do("delete from nm2db_fields where record_id = ?", undef, $record_id);
@@ -65,11 +93,9 @@ sub normalize_biblio {
 }
 
 sub generate_marcxml {
-    my ($self, $biblionumber) = @_;
+    my ($self, $record_id) = @_;
     my $dbh = C4::Context->dbh;
     my $record = MARC::Record->new();
-
-    my ($record_id) = $dbh->selectrow_array('select id from nm2db_records where biblionumber = ?', undef, $biblionumber);
 
     my $fields_sth = $dbh->prepare(
         "SELECT id, tag, indicator1, indicator2 FROM nm2db_fields

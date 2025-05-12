@@ -40,18 +40,22 @@ sub process {
     return if $failed;
 
     my $dbh = C4::Context->dbh;
-    my $sth = $dbh->prepare('select biblionumber, metadata from biblio_metadata');
-    $sth->execute;
+    my $sth_biblios = $dbh->prepare('select biblionumber, metadata from biblio_metadata');
+    $sth_biblios->execute;
 
-    $self->set({ size => $sth->rows });
+    my $sth_authorities = $dbh->prepare('select authid, marcxml from auth_header');
+    $sth_authorities->execute;
+
+    $self->set({ size => $sth_biblios->rows + $sth_authorities->rows });
 
     my @errors;
     my $diff = XML::SemanticDiff->new;
 
-    while (my ($biblionumber, $metadata) = $sth->fetchrow_array) {
+    while (my ($biblionumber, $metadata) = $sth_biblios->fetchrow_array) {
         my $xml;
         try {
-            $xml = Koha::Plugin::HKS3::NormalizeMARC2DB::Normalizer->generate_marcxml($biblionumber);
+            my ($record_id) = $dbh->selectrow_array('select id from nm2db_records where biblionumber = ?', undef, $biblionumber);
+            $xml = Koha::Plugin::HKS3::NormalizeMARC2DB::Normalizer->generate_marcxml($record_id);
             foreach my $change ($diff->compare($xml, $metadata)) {
                 push @errors, { biblionumber => $biblionumber, message => "$change->{message} in context $change->{context}" };
             }
@@ -59,6 +63,23 @@ sub process {
         catch {
             warn "Failed to generate MARCXML for $biblionumber: $_";
             push @errors, { biblionumber => $biblionumber, message => "Failed to generate MARCXML $_" };
+        };
+
+        $self->step();
+    }
+
+    while (my ($authid, $metadata) = $sth_authorities->fetchrow_array) {
+        my $xml;
+        try {
+            my ($record_id) = $dbh->selectrow_array('select id from nm2db_records where authid = ?', undef, $authid);
+            $xml = Koha::Plugin::HKS3::NormalizeMARC2DB::Normalizer->generate_marcxml($record_id);
+            foreach my $change ($diff->compare($xml, $metadata)) {
+                push @errors, { authid => $authid, message => "$change->{message} in context $change->{context}" };
+            }
+        }
+        catch {
+            warn "Failed to generate MARCXML for $authid: $_";
+            push @errors, { authid => $authid, message => "Failed to generate MARCXML $_" };
         };
 
         $self->step();
