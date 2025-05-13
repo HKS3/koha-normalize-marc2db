@@ -1,9 +1,9 @@
 # koha-normalize-marc2db
 koha-plugin to normalize MARC21 data to database tables
 
-This plugin (Koha::Plugin::HKS3::NormalizeMARC2DB) aims to normalize MARC21 XML metadata from the biblio_metadata.metadata table into structured MySQL database tables. Currently, MARC21 XML is stored as a single XML blob, making advanced querying, reporting, and integration difficult.
+This plugin (Koha::Plugin::HKS3::NormalizeMARC2DB) aims to normalize MARC21 XML metadata from the biblio_metadata.metadata amd auth_header.marcxml columns into structured MySQL database tables. Currently, MARC21 XML is stored as a single XML blob, making advanced querying, reporting, and integration difficult.
 
-This plugin introduces an automatic normalization step triggered by the after_biblio_action hook whenever metadata is added or modified. It splits MARC XML into normalized relational tables fully supporting repeatable fields, subfields, and indicators.
+This plugin introduces an automatic normalization step triggered by the after_biblio_action and after_auth_action and after_authority_action hooks whenever metadata is added or modified. It splits MARC XML into normalized relational tables fully supporting repeatable fields, subfields, and indicators.
 
 Advantages:
 
@@ -20,6 +20,18 @@ Provides clear and structured access to MARC data elements.
 This approach aligns with best practices for database normalization and can substantially enhance Koha's extensibility and interoperability.
 
 see https://bugs.koha-community.org/bugzilla3/show_bug.cgi?id=39557
+
+# Installation and usage
+
+please download the koha plugin as kpz here https://github.com/HKS3/koha-normalize-marc2db/tags use the latest version
+
+after installing an enabling the plugin you may have to restart koha (depening on you version and settings)
+
+after installing you have to run the plugin tool ONCE to normalize all biblio and authority data to the tables. Go to the Plugins page and under Action choose "Run Tool"
+
+![image](https://github.com/user-attachments/assets/61503e27-c615-4e2b-beaa-b5e4ef029591)
+
+this may take quite a long time if you have many records, but only needs to be done once.
 
 # example SQL (using ktd)
 
