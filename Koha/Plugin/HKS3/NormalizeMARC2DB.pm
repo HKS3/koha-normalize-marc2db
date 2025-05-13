@@ -27,12 +27,12 @@ use Koha::Plugin::HKS3::NormalizeMARC2DB::Normalizer;
 use Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::NormalizeAll;
 use Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::VerifyAll;
 
-our $VERSION = "0.12";
+our $VERSION = "0.9";
 
 our $metadata = {
     name            => 'Normalize MARC to DB',
-    author          => 'Mark Hofstetter',
-    description     => 'Normalize MARC XML into MySQL tables',
+    author          => 'Mark Hofstetter, Tadeusz Sosnierz',
+    description     => 'Normalize MARC XML into Database tables',
     namespace       => 'marc2db',
     date_authored   => '2025-04-01',
     date_updated    => '2025-05-13',
@@ -134,6 +134,14 @@ sub install {
 
     C4::Context->dbh->do("    
         create index nm2db_fields_tag_ind on nm2db_fields (tag);
+    ");
+
+    C4::Context->dbh->do("    
+        create index nm2db_record_biblionumber_ind on nm2db_records (biblionumber);
+    ");
+
+    C4::Context->dbh->do("    
+        create index nm2db_record_authid_ind on nm2db_records (authid);
     ");
 
     return 1;
