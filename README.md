@@ -135,7 +135,4 @@ total_mb DESC
 +-------------------+-----------------+---------+----------+----------+
 ```
 not surprisingly it uses about the same amount of space as biblio_metadata
-```
-create index nm2db_subfields_ind on nm2db_subfields(value);
-create index nm2db_fields_ind on nm2db_fields (biblionumber, tag);
-```
+
