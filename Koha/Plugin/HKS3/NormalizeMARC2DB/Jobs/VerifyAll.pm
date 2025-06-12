@@ -102,8 +102,7 @@ sub enqueue {
 }
 
 unless (caller) {
-    my $job = __PACKAGE__->new({ run_in_foreground => 1 });
-    $job->process();
+    __PACKAGE__->process_in_foreground;
 }
 
 1;

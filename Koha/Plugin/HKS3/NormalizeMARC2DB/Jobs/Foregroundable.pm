@@ -10,19 +10,14 @@ This overrides some of the Koha::BackgroundJob methods to allow the job to be ra
 
 =cut
 
-sub new {
-    my ($class, @args) = @_;
-    my $self;
-    if (ref $args[0] eq 'HASH' && $args[0]->{run_in_foreground}) {
-        $self = bless {}, $class;
-        $self->{in_foreground} = 1;
-        $self->{properties} = {};
-        $self->{progress} = 0;
-    } else {
-        $self = SUPER::new(@args);
-    }
+sub process_in_foreground {
+    my $class = shift;
 
-    return $self;
+    my $self = bless {}, $class;
+    $self->{in_foreground} = 1;
+    $self->{properties} = {};
+    $self->{progress} = 0;
+    $self->process();
 }
 
 sub start {
