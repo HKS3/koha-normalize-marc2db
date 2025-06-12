@@ -18,7 +18,9 @@ package Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::VerifyAll;
 use Modern::Perl;
 use Try::Tiny qw(catch try);
 
-use base 'Koha::BackgroundJob';
+use Koha::Plugin::HKS3::NormalizeMARC2DB::Normalizer;
+use Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::Foregroundable;
+use base 'Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::Foregroundable';
 
 sub job_type {
     return 'plugin_marc2db_verifyall';
@@ -100,8 +102,8 @@ sub enqueue {
 }
 
 unless (caller) {
-    my $id = __PACKAGE__->new->enqueue();
-    print "Queued " . __PACKAGE__ . ", job ID: $id\n";
+    my $job = __PACKAGE__->new({ run_in_foreground => 1 });
+    $job->process();
 }
 
 1;
