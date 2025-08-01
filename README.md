@@ -138,3 +138,16 @@ total_mb DESC
 ```
 not surprisingly it uses about the same amount of space as biblio_metadata
 
+# update biblio titles
+
+```
+update nm2db_subfields s
+  join nm2db_fields f on f.id = s.field_id
+  join nm2db_records r on r.id = f.record_id
+set value = concat("updated title: ", value),
+    changed = 1
+where type = 'biblio'
+      and tag = '245'
+      and code = 'a';
+```
+
