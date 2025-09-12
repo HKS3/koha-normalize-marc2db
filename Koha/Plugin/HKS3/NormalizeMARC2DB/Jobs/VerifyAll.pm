@@ -51,7 +51,7 @@ sub process {
     $self->set({ size => $sth_biblios->rows + $sth_authorities->rows });
 
     my @errors;
-    my $diff = XML::SemanticDiff->new;
+    my $diff = XML::SemanticDiff->new(keeplinenums => 1, keepdata => 1);
 
     while (my ($biblionumber, $metadata) = $sth_biblios->fetchrow_array) {
         my $xml;
@@ -59,7 +59,7 @@ sub process {
             my ($record_id) = $dbh->selectrow_array('select id from nm2db_records where biblionumber = ?', undef, $biblionumber);
             $xml = Koha::Plugin::HKS3::NormalizeMARC2DB::Normalizer->generate_marcxml($record_id);
             foreach my $change ($diff->compare($xml, $metadata)) {
-                push @errors, { biblionumber => $biblionumber, message => "$change->{message} in context $change->{context}" };
+                push @errors, { biblionumber => $biblionumber, message => "$change->{message} in context $change->{context}", change => $change };
             }
         }
         catch {

@@ -27,7 +27,7 @@ use Koha::Plugin::HKS3::NormalizeMARC2DB::Normalizer;
 use Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::NormalizeAll;
 use Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::VerifyAll;
 
-our $VERSION = "0.93";
+our $VERSION = "0.94";
 
 our $metadata = {
     name            => 'Normalize MARC to DB',

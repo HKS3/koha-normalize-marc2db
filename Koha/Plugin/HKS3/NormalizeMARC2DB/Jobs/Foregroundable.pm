@@ -1,5 +1,6 @@
 package Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::Foregroundable;
 use Modern::Perl;
+use Data::Dumper;
 
 use base 'Koha::BackgroundJob';
 
@@ -57,7 +58,7 @@ sub finish {
 
     if ($self->{in_foreground}) {
         say "Job finished";
-        p $data;
+        warn Dumper $data;
     } else {
         return $self->SUPER::finish($data);
     }
