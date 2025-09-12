@@ -1,6 +1,5 @@
 package Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::Foregroundable;
 use Modern::Perl;
-use DDP;
 
 use base 'Koha::BackgroundJob';
 
