@@ -49,18 +49,21 @@ sub normalize_biblio {
 sub normalize_record {
     my ($self, $record_id, $record) = @_;
     my $dbh = C4::Context->dbh;
+    $dbh->begin_work();
 
     # delete cascading
     $dbh->do("delete from nm2db_fields where record_id = ?", undef, $record_id);
 
-    $dbh->do("INSERT INTO nm2db_fields (record_id, tag, indicator1, indicator2, sequence)
-            VALUES (?, ?, ?, ?, ?)",
-            undef, $record_id, 'leader', undef, undef, 0);
+    my $insert_into_fields_sth = $dbh->prepare(
+        "INSERT INTO nm2db_fields (record_id, tag, indicator1, indicator2, sequence) VALUES (?, ?, ?, ?, ?)"
+    );
+    $insert_into_fields_sth->execute($record_id, 'leader', undef, undef, 0);
     my $field_id = $dbh->{mysql_insertid};
 
-    $dbh->do("INSERT INTO nm2db_subfields (field_id, code, value, sequence)
-                VALUES (?, ?, ?, ?)",
-                undef, $field_id, '', $record->leader(), 1);
+    my $insert_into_subfields_sth = $dbh->prepare(
+        "INSERT INTO nm2db_subfields (field_id, code, value, sequence) VALUES (?, ?, ?, ?)"
+    );
+    $insert_into_subfields_sth->execute($field_id, '', $record->leader(), 1);
 
     my $field_seq = 0;
     
@@ -68,26 +71,21 @@ sub normalize_record {
         $field_seq++;
         my ($tag, $ind1, $ind2) = ($field->tag, $field->indicator(1), $field->indicator(2));
 
-        $dbh->do("INSERT INTO nm2db_fields (record_id, tag, indicator1, indicator2, sequence)
-                VALUES (?, ?, ?, ?, ?)",
-                undef, $record_id, $tag, $ind1, $ind2, $field_seq);
+        $insert_into_fields_sth->execute($record_id, $tag, $ind1, $ind2, $field_seq);
         my $field_id = $dbh->{mysql_insertid};
 
         my $subfield_seq = 0;
         if ($field->is_control_field()) {
-            $dbh->do("INSERT INTO nm2db_subfields (field_id, code, value, sequence)
-                    VALUES (?, ?, ?, ?)",
-                    undef, $field_id, '', $field->data(), 1);
+            $insert_into_subfields_sth->execute($field_id, '', $field->data(), 1);
         } else {
             foreach my $subfield ($field->subfields()) {
                 $subfield_seq++;
                 my ($code, $value) = @$subfield;
-                $dbh->do("INSERT INTO nm2db_subfields (field_id, code, value, sequence)
-                        VALUES (?, ?, ?, ?)",
-                        undef, $field_id, $code, $value, $subfield_seq);
+                $insert_into_subfields_sth->execute($field_id, $code, $value, $subfield_seq);
             }
         }
     }
+    $dbh->commit();
 
     return 1;
 }
