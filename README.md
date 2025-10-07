@@ -150,4 +150,8 @@ where type = 'biblio'
       and tag = '245'
       and code = 'a';
 ```
+you then have to run from the command line (soon on the GUI on a tool) 
 
+```
+ #:/var/lib/koha/<instance>/plugins# perl -I. Koha/Plugin/HKS3/NormalizeMARC2DB/Jobs/UpdateChangedMetadata.pm
+```
