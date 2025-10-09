@@ -112,9 +112,26 @@ MariaDB [koha_kohadev]> select value, count(*) c from nm2db_fields f join nm2db_
 +----------------------------------------------------+---+
 10 rows in set (0.002 sec)
 ```
+# search for duplicate records via ISBN 
+```
+with cte as 
+(select r.biblionumber, 
+    f.sequence field_order, 
+    s.sequence subfield_order, 
+    tag, 
+    indicator1, 
+    indicator2, 
+    code, 
+    value 
+    from nm2db_fields f 
+    join nm2db_subfields s on f.id = s.field_id     
+    join nm2db_records r on r.id = f.record_id 
+    where 1=1 and tag = '020' and  code = 'a') 
+select value, count(*) c from cte
+    group by value having c > 1 order by c desc 
+```
 
-
-# disk space ie storage requirements
+## disk space ie storage requirements
 ```
 SELECT  
 (select count(*) from biblio) number_of_biblios,
@@ -138,7 +155,8 @@ total_mb DESC
 ```
 not surprisingly it uses about the same amount of space as biblio_metadata
 
-# update biblio titles
+
+## update biblio titles
 
 ```
 update nm2db_subfields s
@@ -153,5 +171,5 @@ where type = 'biblio'
 you then have to run from the command line (soon on the GUI on a tool) 
 
 ```
- #:/var/lib/koha/<instance>/plugins# perl -I. Koha/Plugin/HKS3/NormalizeMARC2DB/Jobs/UpdateChangedMetadata.pm
+#:/var/lib/koha/<instance>/plugins# perl -I. Koha/Plugin/HKS3/NormalizeMARC2DB/Jobs/UpdateChangedMetadata.pm
 ```
