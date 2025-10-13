@@ -18,6 +18,10 @@ package Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::UpdateChangedMetadata;
 use Modern::Perl;
 use Try::Tiny qw(catch try);
 
+use C4::AuthoritiesMarc qw(GetAuthority);
+use C4::Biblio qw(ModZebra);
+use Koha::SearchEngine::Elasticsearch::Indexer;
+
 use Koha::Plugin::HKS3::NormalizeMARC2DB::Normalizer;
 use Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::Foregroundable;
 use base 'Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::Foregroundable';
@@ -38,7 +42,7 @@ sub process {
 
     $self->set({ size => $sth_records->rows });
 
-    my @errors;
+    my (@errors, @authids, @biblioids);
 
     while (my ($record_id, $type, $biblionumber, $authid) = $sth_records->fetchrow_array) {
         my $xml;
@@ -56,8 +60,10 @@ sub process {
         try {
             if ($type eq 'biblio') {
                 $dbh->do('update biblio_metadata set metadata = ? where biblionumber = ?', {}, $xml, $biblionumber);
+                push @biblioids, $biblionumber;
             } elsif ($type eq 'authority') {
                 $dbh->do('update auth_header set marcxml = ? where authid = ?', {}, $xml, $authid);
+                push @authids, $authid;
             }
             $dbh->do('update nm2db_records set changed = 0 where id = ?', {}, $record_id);
         } catch {
@@ -68,7 +74,33 @@ sub process {
         $self->step();
     }
 
+    $self->reindex(\@authids, \@biblioids);
+
     $self->finish({ messages => \@errors });
+}
+
+sub reindex {
+    my ($self, $authids, $biblionumbers) = @_;
+
+    if (C4::Context->preference('SearchEngine') eq 'Elasticsearch') {
+        my $auth_index = Koha::SearchEngine::Elasticsearch::Indexer->new({ index => $Koha::SearchEngine::Elasticsearch::AUTHORITIES_INDEX });
+        my $bib_index  = Koha::SearchEngine::Elasticsearch::Indexer->new({ index => $Koha::SearchEngine::Elasticsearch::BIBLIOS_INDEX });
+        if (@$authids) {
+            my @authrecords = map { GetAuthority($_) } @$authids;
+            $auth_index->update_index($authids, \@authrecords);
+        }
+        if (@$biblionumbers) {
+            my @bibliorecords = map { Koha::Biblios->find($_)->metadata->record({ embed_items => 1}) } @$biblionumbers;
+            $bib_index->update_index($biblionumbers, \@bibliorecords);
+        }
+    } else {
+        for my $authid (@$authids) {
+            ModZebra($authid, 'specialUpdate', 'authorityserver');
+        }
+        for my $biblionumber (@$biblionumbers) {
+            ModZebra($biblionumber, 'specialUpdate', 'biblioserver');
+        }
+    }
 }
 
 sub enqueue {
