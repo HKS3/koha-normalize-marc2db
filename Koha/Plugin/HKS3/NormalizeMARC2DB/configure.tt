@@ -10,7 +10,7 @@
 
 <div id="doc3">
 
-	<h3> GeoSearch Plugin Configuration </h3>
+	<h3> NormalizeMarc2DB jobs </h3>
 
 	<form method="get">
 		<input type="hidden" name="class" value="[% CLASS %]"/>

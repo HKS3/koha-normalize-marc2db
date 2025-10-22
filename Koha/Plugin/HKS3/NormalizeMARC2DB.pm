@@ -83,7 +83,9 @@ sub tool {
                     skip_authorities => 1,
                 })
             },
-            VerifyAll => sub { Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::VerifyAll->new->enqueue() },
+            VerifyAll => sub {
+                Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::VerifyAll->new->enqueue()
+            },
             UpdateChangedMetadata => sub {
                 Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::UpdateChangedMetadata->new->enqueue()
             },

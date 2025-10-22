@@ -24,7 +24,7 @@ use base 'Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::Foregroundable';
 use Koha::Plugin::HKS3::NormalizeMARC2DB::Normalizer;
 
 sub job_type {
-    return 'plugin_marc2db_updatechangedmetadata';
+    return 'plugin_marc2db_normalizeall';
 }
 
 sub process {
