@@ -1,0 +1,29 @@
+[% INCLUDE 'doc-head-open.inc' %]
+	<title>NormalizeMarc2DB jobs</title>
+[% INCLUDE 'doc-head-close.inc' %]
+
+</head>
+<body>
+
+[% INCLUDE 'header.inc' %]
+[% INCLUDE 'cat-search.inc' %]
+
+<div id="doc3">
+
+	<h3> GeoSearch Plugin Configuration </h3>
+
+	<form method="get">
+		<input type="hidden" name="class" value="[% CLASS %]"/>
+		<input type="hidden" name="method" value="[% METHOD %]"/>
+
+		<button type="submit" name="run" value="NormalizeAll"> Normalize all records </button>
+		<br>
+		<button type="submit" name="run" value="NormalizeAllNoAuths"> Normalize all records except authorities </button>
+		<br>
+		<button type="submit" name="run" value="VerifyAll"> Verify normalized data against stored marcxml </button>
+		<br>
+		<button type="submit" name="run" value="UpdateChangedMetadata">
+			Updated stored marcxml with new normalized data
+		</button>
+	</form>
+</div>
