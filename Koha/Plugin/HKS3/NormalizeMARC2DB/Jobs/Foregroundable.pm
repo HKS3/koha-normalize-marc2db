@@ -4,6 +4,8 @@ use Data::Dumper;
 
 use base 'Koha::BackgroundJob';
 
+use Koha::Plugin::HKS3::NormalizeMARC2DB::Utils qw(argv_into_args);
+
 =pod
 
 This overrides some of the Koha::BackgroundJob methods to allow the job to be ran without the job queue.
@@ -13,11 +15,13 @@ This overrides some of the Koha::BackgroundJob methods to allow the job to be ra
 sub process_in_foreground {
     my $class = shift;
 
+    my $args = argv_into_args(@ARGV);
+
     my $self = bless {}, $class;
     $self->{in_foreground} = 1;
     $self->{properties} = {};
     $self->{progress} = 0;
-    $self->process();
+    $self->process($args);
 }
 
 sub start {
