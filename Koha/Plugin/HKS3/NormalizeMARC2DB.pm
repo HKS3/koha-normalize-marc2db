@@ -102,7 +102,7 @@ sub tool {
         my $id = $job->();
         print $self->{cgi}->redirect("/cgi-bin/koha/admin/background_jobs.pl?op=view&id=$id");
     } else {
-        my $template = $self->get_template({ file => 'configure.tt' });
+        my $template = $self->get_template({ file => 'tool.tt' });
         $self->output_html($template->output);
     }
 }
