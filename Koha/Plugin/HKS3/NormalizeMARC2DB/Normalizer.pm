@@ -1,6 +1,7 @@
 package Koha::Plugin::HKS3::NormalizeMARC2DB::Normalizer;
 use Modern::Perl;
 use MARC::Record;
+use Try::Tiny;
 
 use C4::Context;
 
@@ -49,7 +50,16 @@ sub normalize_biblio {
 sub normalize_record {
     my ($self, $record_id, $record) = @_;
     my $dbh = C4::Context->dbh;
-    $dbh->begin_work();
+
+    my $in_transaction;
+    try {
+        $dbh->begin_work();
+        $in_transaction = 1;
+    } catch {
+        if ($_ !~ /already in a transaction/i) {
+            die $_;
+        }
+    };
 
     # delete cascading
     $dbh->do("delete from nm2db_fields where record_id = ?", undef, $record_id);
@@ -85,7 +95,7 @@ sub normalize_record {
             }
         }
     }
-    $dbh->commit();
+    $dbh->commit() if $in_transaction;
 
     return 1;
 }
