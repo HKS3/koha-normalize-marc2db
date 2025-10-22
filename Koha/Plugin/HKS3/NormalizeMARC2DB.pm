@@ -1,5 +1,4 @@
 package Koha::Plugin::HKS3::NormalizeMARC2DB;
-
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -25,6 +24,7 @@ use XML::Twig;
 
 use Koha::Plugin::HKS3::NormalizeMARC2DB::Normalizer;
 use Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::NormalizeAll;
+use Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::UpdateChangedMetadata;
 use Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::VerifyAll;
 
 our $VERSION = "0.95";
@@ -57,6 +57,7 @@ sub background_tasks {
     return {
         normalizeall => 'Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::NormalizeAll',
         verifyall => 'Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::VerifyAll',
+        updatechangedmetadata => 'Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::UpdateChangedMetadata',
     };
 }
 
@@ -67,20 +68,36 @@ sub template_include_paths {
     ];
 }
 
+
 sub tool {
     my ( $self ) = @_;
+    my $cgi = CGI->new;
 
-    my $id = Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::NormalizeAll->new->enqueue();
-
-    print $self->{'cgi'}->redirect("/cgi-bin/koha/admin/background_jobs.pl?op=view&id=$id");
-}
-
-sub report {
-    my ( $self ) = @_;
-
-    my $id = Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::VerifyAll->new->enqueue();
-
-    print $self->{'cgi'}->redirect("/cgi-bin/koha/admin/background_jobs.pl?op=view&id=$id");
+    if ($self->{cgi}->param('run')) {
+        my %jobs = (
+            NormalizeAll => sub {
+                Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::NormalizeAll->new->enqueue()
+            },
+            NormalizeAllNoAuths => sub {
+                Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::NormalizeAll->new->enqueue({
+                    skip_authorities => 1,
+                })
+            },
+            VerifyAll => sub { Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::VerifyAll->new->enqueue() },
+            UpdateChangedMetadata => sub {
+                Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::UpdateChangedMetadata->new->enqueue()
+            },
+        );
+        my $job = $jobs{$self->{cgi}->param('run')};
+        if (!$job) {
+            die "Invalid job name";
+        }
+        my $id = $job->();
+        print $self->{cgi}->redirect("/cgi-bin/koha/admin/background_jobs.pl?op=view&id=$id");
+    } else {
+        my $template = $self->get_template({ file => 'configure.tt' });
+        $self->output_html($template->output);
+    }
 }
 
 sub install {

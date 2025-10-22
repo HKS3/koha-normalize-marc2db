@@ -24,7 +24,7 @@ use base 'Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::Foregroundable';
 use Koha::Plugin::HKS3::NormalizeMARC2DB::Normalizer;
 
 sub job_type {
-    return 'plugin_marc2db_normalizeall';
+    return 'plugin_marc2db_updatechangedmetadata';
 }
 
 sub process {
@@ -36,8 +36,8 @@ sub process {
     my $sth_biblios = $dbh->prepare("SELECT biblionumber FROM biblio");
     $sth_biblios->execute;
 
-    my $sth_authorities = $dbh->prepare("SELECT authid FROM auth_header");
-    $sth_authorities->execute;
+    my $sth_authorities = $dbh->prepare("SELECT authid FROM auth_header WHERE 1 = ?");
+    $sth_authorities->execute($args->{skip_authorities} ? 0 : 1);
 
     $self->set({ size => $sth_biblios->rows + $sth_authorities->rows });
 
@@ -74,7 +74,7 @@ sub enqueue {
     $self->SUPER::enqueue(
         {
             job_size => 1,
-            job_args => {},
+            job_args => $args,
         }
     );
 }

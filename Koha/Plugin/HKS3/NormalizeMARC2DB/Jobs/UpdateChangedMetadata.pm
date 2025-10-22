@@ -109,7 +109,7 @@ sub enqueue {
     $self->SUPER::enqueue(
         {
             job_size => 1,
-            job_args => {},
+            job_args => $args,
         }
     );
 }
