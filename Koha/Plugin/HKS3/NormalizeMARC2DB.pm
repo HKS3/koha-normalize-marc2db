@@ -89,6 +89,11 @@ sub tool {
             UpdateChangedMetadata => sub {
                 Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::UpdateChangedMetadata->new->enqueue()
             },
+            ViewChangedMetadata => sub {
+                Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::UpdateChangedMetadata->new->enqueue({
+                    dry_run => 1,
+                })
+            },
         );
         my $job = $jobs{$self->{cgi}->param('run')};
         if (!$job) {

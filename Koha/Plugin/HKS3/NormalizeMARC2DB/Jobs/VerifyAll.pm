@@ -34,7 +34,7 @@ sub process {
     # Try this in runtime since it's not part of the stock Koha install
     my $failed;
     try {
-        require 'XML/SemanticDiff.pm'; ## no critic
+        require 'XML/SemanticDiff.pm'; ## no critic(RequireBareWordIncludes)
     } catch {
         $self->finish({ messages => [{ message => "Required module XML::SemanticDiff not installed" }] });
         $failed = 1;

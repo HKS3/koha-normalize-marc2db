@@ -1,4 +1,5 @@
 [% USE Koha %]
+[% USE To %]
 
 [% SET report = job.decoded_data %]
 [% BLOCK report %]
@@ -22,10 +23,6 @@
         <div class="dialog message"> The job is still running, no details available yet. </div>
     [% ELSIF job.messages.size == 0 %]
         <div class="dialog message"> No details available. </div>
-    [% ELSE %]
-        <div class="dialog message">
-            [% job.messages.size %] errors encountered.
-        </div>
     [% END %]
 
 
@@ -33,13 +30,18 @@
         <div class="dialog message">
             <i class="fa fa-exclamation error"></i>
             [% IF error.biblionumber %]
-                Unsuccessful denormalization of biblio#[% error.biblionumber %]:
+                For biblio#[% error.biblionumber %]:
             [% ELSIF error.authid %]
-                Unsuccessful denormalization of auth#[% error.authid %]:
+                For of auth#[% error.authid %]:
             [% ELSE %]
                 Error:
             [% END %]
-            <code> [% error.message %] </code>
+            [% IF error.change %]
+                Upcoming change:
+                <pre>[% To.json(error.change) %]</pre>
+                <br>
+            [% END %]
+            <pre>[% error.message | html %]</pre>
         </div>
     [% END %]
 [% END %]
