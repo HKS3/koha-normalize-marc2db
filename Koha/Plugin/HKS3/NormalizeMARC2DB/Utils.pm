@@ -20,7 +20,11 @@ sub argv_into_args {
             ($key, $value) = split '=', $key;
             $args{$key} = $value;
         }
-        $value = shift(@argv) // 1;
+        if (!@argv or $argv[0] =~ /^--/) {
+            $value = 1;
+        } else {
+            $value = shift(@argv);
+        }
         $args{$key} = $value;
     }
 
