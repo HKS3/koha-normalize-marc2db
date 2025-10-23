@@ -35,6 +35,10 @@ after installing you have to run the plugin tool ONCE to normalize all biblio an
 
 this may take quite a long time if you have many records, but only needs to be done once.
 
+# Database Schema
+
+<img width="1214" height="2546" alt="Untitled diagram-2025-10-23-095015" src="https://github.com/user-attachments/assets/6ebf3125-7077-456c-92a2-5412a0128d03" />
+
 # example SQL (using ktd)
 
 Get all Field + Subfields of a given biblionumber
