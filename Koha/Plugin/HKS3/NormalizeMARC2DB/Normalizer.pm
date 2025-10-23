@@ -20,7 +20,7 @@ sub normalize_authority {
     return unless $record;
 
     # ensure we have a record entry
-    $dbh->do('insert into nm2db_records (authid, type) values (?, "authority") on duplicate key update changed = false', undef, $authid);
+    $dbh->do('insert into nm2db_records (authid, type) values (?, "authority") on duplicate key update type = type', undef, $authid);
     my ($record_id) = $dbh->selectrow_array('select id from nm2db_records where authid = ?', undef, $authid);
 
     return $self->normalize_record($record_id, $record);
@@ -41,7 +41,7 @@ sub normalize_biblio {
     return unless $record;
 
     # ensure we have a record entry
-    $dbh->do('insert into nm2db_records (biblionumber) values (?) on duplicate key update changed = false', undef, $biblionumber);
+    $dbh->do('insert into nm2db_records (biblionumber) values (?) on duplicate key update type = type', undef, $biblionumber);
     my ($record_id) = $dbh->selectrow_array('select id from nm2db_records where biblionumber = ?', undef, $biblionumber);
 
     return $self->normalize_record($record_id, $record);
@@ -95,6 +95,7 @@ sub normalize_record {
             }
         }
     }
+    $dbh->do('delete from nm2db_change_queue where record_id = ?', {}, $record_id);
     $dbh->commit() if $in_transaction;
 
     return 1;

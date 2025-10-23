@@ -50,7 +50,7 @@ sub process {
 
     my $dbh = C4::Context->dbh;
 
-    my $sth_records = $dbh->prepare('select id, type, biblionumber, authid from nm2db_records where changed = 1');
+    my $sth_records = $dbh->prepare('select record_id, type, biblionumber, authid from nm2db_change_queue join nm2db_records on record_id = id');
     $sth_records->execute;
 
     $self->set({ size => $sth_records->rows });
@@ -106,7 +106,7 @@ sub process {
                     $dbh->do('update auth_header set marcxml = ? where authid = ?', {}, $xml, $authid);
                     push @authids, $authid;
                 }
-                $dbh->do('update nm2db_records set changed = 0 where id = ?', {}, $record_id);
+                $dbh->do('delete from nm2db_change_queue where record_id = ?', {}, $record_id);
             } catch {
                 push @messages, { record => $record_id, message => "Failed to update MARCXML $_" };
             };

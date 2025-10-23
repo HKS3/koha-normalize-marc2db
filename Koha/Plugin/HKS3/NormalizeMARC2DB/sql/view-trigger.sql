@@ -24,65 +24,62 @@ LEFT JOIN nm2db_fields f
 LEFT JOIN nm2db_subfields s
        ON s.field_id = f.id;
 
-
+---
 CREATE or replace TABLE nm2db_change_queue (
   record_id INT PRIMARY KEY,
   last_modified TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-
-DELIMITER $$
-
+---
 CREATE OR REPLACE PROCEDURE nm2db_enqueue_change(p_record_id INT)
 BEGIN
   IF p_record_id IS NOT NULL THEN
     INSERT IGNORE INTO nm2db_change_queue (record_id)
     VALUES (p_record_id);
   END IF;
-END$$
-
+END
+---
 CREATE OR REPLACE TRIGGER nm2db_fields_ai
 AFTER INSERT ON nm2db_fields
 FOR EACH ROW
 BEGIN
   CALL nm2db_enqueue_change(NEW.record_id);
-END$$
-
+END
+---
 CREATE OR REPLACE TRIGGER nm2db_fields_au
 AFTER UPDATE ON nm2db_fields
 FOR EACH ROW
 BEGIN
   CALL nm2db_enqueue_change(NEW.record_id);
-END$$
-
+END
+---
 CREATE OR REPLACE TRIGGER nm2db_fields_ad
 AFTER DELETE ON nm2db_fields
 FOR EACH ROW
 BEGIN
   CALL nm2db_enqueue_change(OLD.record_id);
-END$$
-
-
+END
+---
 CREATE OR REPLACE TRIGGER nm2db_fields_ai
 AFTER INSERT ON nm2db_fields
 FOR EACH ROW
 BEGIN
   CALL nm2db_enqueue_change(NEW.record_id);
-END$$
-
+END
+---
 CREATE OR REPLACE TRIGGER nm2db_fields_au
 AFTER UPDATE ON nm2db_fields
 FOR EACH ROW
 BEGIN
   CALL nm2db_enqueue_change(NEW.record_id);
-END$$
-
+END
+---
 CREATE OR REPLACE TRIGGER nm2db_fields_ad
 AFTER DELETE ON nm2db_fields
 FOR EACH ROW
 BEGIN
   CALL nm2db_enqueue_change(OLD.record_id);
-END$$
-
+END
+---
 CREATE OR REPLACE TRIGGER nm2db_subfields_ai
 AFTER INSERT ON nm2db_subfields
 FOR EACH ROW
@@ -95,8 +92,8 @@ BEGIN
    WHERE id = NEW.field_id;
 
   CALL nm2db_enqueue_change(v_record_id);
-END$$
-
+END
+---
 CREATE OR REPLACE TRIGGER nm2db_subfields_au
 AFTER UPDATE ON nm2db_subfields
 FOR EACH ROW
@@ -109,8 +106,8 @@ BEGIN
    WHERE id = NEW.field_id;
 
   CALL nm2db_enqueue_change(v_record_id);
-END$$
-
+END
+---
 CREATE OR REPLACE TRIGGER nm2db_subfields_ad
 AFTER DELETE ON nm2db_subfields
 FOR EACH ROW
@@ -123,8 +120,4 @@ BEGIN
    WHERE id = OLD.field_id;
 
   CALL nm2db_enqueue_change(v_record_id);
-END$$
-
-DELIMITER ;
-
-
+END
