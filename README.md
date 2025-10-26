@@ -51,7 +51,7 @@ select r.biblionumber, f.sequence field_order, s.sequence subfield_order, tag, i
 ;
 ```
 
-for convenience we created a view wich simplifies the query to
+for convenience we created a view which simplifies the query to
 ```
 select tag, ind1, ind2, code, value from nm2db_v_record where biblionumber = 11;
 ```
