@@ -29,6 +29,14 @@ please download the koha plugin as kpz here https://github.com/HKS3/koha-normali
 
 after installing an enabling the plugin you may have to restart koha (depening on you version and settings)
 
+optionally you should/could install
+
+```
+apt-get install libxml-semanticdiff-perl
+```
+
+to see differences between SQL Tables and the MARCXML
+
 after installing you have to run the plugin tool ONCE to normalize all biblio and authority data to the tables. Go to the Plugins page and under Action choose "Run Tool"
 
 ![image](https://github.com/user-attachments/assets/61503e27-c615-4e2b-beaa-b5e4ef029591)
