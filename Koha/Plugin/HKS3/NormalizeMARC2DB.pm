@@ -22,6 +22,8 @@ use MARC::Field;
 use MARC::File::XML (BinaryEncoding => 'utf8');
 use XML::Twig;
 
+use Koha::Logger;
+
 use Koha::Plugin::HKS3::NormalizeMARC2DB::Normalizer;
 use Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::NormalizeAll;
 use Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::UpdateChangedMetadata;
@@ -135,7 +137,10 @@ sub after_biblio_action {
     my ($self, $params) = @_;
 
     my $action = $params->{action};
-    my $biblio_id = $params->{biblio_id};
+    my $biblio_id = $params->{payload}->{biblio_id};
+    use Data::Dumper;
+    Koha::Logger->get->warn($action);
+     Koha::Logger->get->warn($biblio_id);
 
     if ($action eq 'add' || $action eq 'modify' || $action eq 'create') {
         Koha::Plugin::HKS3::NormalizeMARC2DB::Normalizer->normalize_biblio($biblio_id);
