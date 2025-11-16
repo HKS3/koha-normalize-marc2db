@@ -32,7 +32,7 @@ after installing an enabling the plugin you may have to restart koha (depening o
 optionally you should/could install
 
 ```
-apt-get install libxml-semanticdiff-perl
+sudo apt-get install libxml-semanticdiff-perl
 ```
 
 to see differences between SQL Tables and the MARCXML
