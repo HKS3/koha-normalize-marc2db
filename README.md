@@ -43,6 +43,19 @@ after installing you have to run the plugin tool ONCE to normalize all biblio an
 
 this may take quite a long time if you have many records, but only needs to be done once.
 
+# Special Case: Binary Logging
+
+If you are using Binary Logging in mariadb/mysql before installing the plugin you have to set
+`
+mysql> SET GLOBAL log_bin_trust_function_creators = 1;
+`
+and permanetly in the config files
+
+`
+[mysqld]
+log_bin_trust_function_creators=1
+`
+
 # Database Schema
 
 <img width="1214" height="2546" alt="Untitled diagram-2025-10-23-095015" src="https://github.com/user-attachments/assets/6ebf3125-7077-456c-92a2-5412a0128d03" />
