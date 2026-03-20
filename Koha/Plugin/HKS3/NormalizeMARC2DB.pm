@@ -169,7 +169,7 @@ sub after_authority_action {
 sub delete_normalized_biblio {
     my ($self, $biblionumber) = @_;
     my $dbh = C4::Context->dbh;
-    $dbh->do("delete from nm2db_fields where biblionumber= ?", undef, $biblionumber);
+    $dbh->do("delete from nm2db_records where biblionumber= ?", undef, $biblionumber);
 }
 
 1;
