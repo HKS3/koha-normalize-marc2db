@@ -138,9 +138,6 @@ sub after_biblio_action {
 
     my $action = $params->{action};
     my $biblio_id = $params->{payload}->{biblio_id};
-    use Data::Dumper;
-    Koha::Logger->get->warn($action);
-     Koha::Logger->get->warn($biblio_id);
 
     if ($action eq 'add' || $action eq 'modify' || $action eq 'create') {
         Koha::Plugin::HKS3::NormalizeMARC2DB::Normalizer->normalize_biblio($biblio_id);
