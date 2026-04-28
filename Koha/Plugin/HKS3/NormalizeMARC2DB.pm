@@ -144,8 +144,6 @@ sub after_biblio_action {
 
     if ($action eq 'add' || $action eq 'modify' || $action eq 'create') {
         Koha::Plugin::HKS3::NormalizeMARC2DB::Normalizer->normalize_biblio($biblio_id);
-    } elsif ($action eq 'delete') {
-        $self->delete_normalized_biblio($biblio_id);
     }
 
     return;
@@ -159,17 +157,9 @@ sub after_authority_action {
 
     if ($action eq 'add' || $action eq 'modify' || $action eq 'create') {
         Koha::Plugin::HKS3::NormalizeMARC2DB::Normalizer->normalize_authority($authority_id);
-    } elsif ($action eq 'delete') {
-        $self->delete_normalized_authority($authority_id);
     }
 
     return;
-}
-
-sub delete_normalized_biblio {
-    my ($self, $biblionumber) = @_;
-    my $dbh = C4::Context->dbh;
-    $dbh->do("delete from nm2db_records where biblionumber= ?", undef, $biblionumber);
 }
 
 1;
