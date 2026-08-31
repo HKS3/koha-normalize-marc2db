@@ -7,6 +7,8 @@ This plugin (Koha::Plugin::HKS3::NormalizeMARC2DB) aims to normalize MARC21 XML 
 
 This plugin introduces an automatic normalization step triggered by the after_biblio_action and after_auth_action and after_authority_action hooks whenever metadata is added or modified. It splits MARC XML into normalized relational tables fully supporting repeatable fields, subfields, and indicators.
 
+Starting with version 1.0, database write triggers are no longer installed by this base plugin. If you want direct writes to `nm2db_fields` or `nm2db_subfields` to enqueue changed records for write-back to MARCXML, install the dependent plugin [`koha-normalize-marc2db-write-triggers`](https://github.com/HKS3/koha-normalize-marc2db-write-triggers) after this plugin.
+
 Advantages:
 
 Significantly simplifies complex querying and reporting of MARC21 data.
