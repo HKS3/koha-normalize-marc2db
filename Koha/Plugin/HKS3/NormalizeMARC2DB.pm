@@ -29,7 +29,7 @@ use Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::NormalizeAll;
 use Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::UpdateChangedMetadata;
 use Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::VerifyAll;
 
-our $VERSION = "0.992";
+our $VERSION = "1.0";
 
 our $metadata = {
     name            => 'Normalize MARC to DB',
@@ -113,7 +113,7 @@ sub install {
 
     use Try::Tiny;
     try {
-        my @files = qw(sql/tables.sql sql/view-trigger.sql);
+        my @files = qw(sql/tables.sql sql/view.sql sql/change_queue.sql);
         for my $file (@files) {
             my @stmts = split "\n---\n", $self->mbf_read($file);
             C4::Context->dbh->do($_) for @stmts;

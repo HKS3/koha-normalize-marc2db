@@ -1,0 +1,4 @@
+CREATE OR REPLACE TABLE nm2db_change_queue (
+  record_id INT PRIMARY KEY,
+  last_modified TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
