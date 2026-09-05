@@ -75,6 +75,7 @@ sub enqueue {
         {
             job_size => 1,
             job_args => $args,
+            job_queue => 'long_tasks',
         }
     );
 }
