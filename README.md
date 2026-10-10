@@ -39,7 +39,11 @@ sudo apt-get install libxml-semanticdiff-perl
 
 to see differences between SQL Tables and the MARCXML
 
-after installing you have to run the plugin tool ONCE to normalize all biblio and authority data to the tables. Go to the Plugins page and under Action choose "Run Tool"
+after installing, run the plugin tool in batches until all biblio and authority data has been normalized to the tables. Go to the Plugins page and under Action choose "Run Tool"
+
+The tool normalizes up to the selected number of records per run. By default it only processes biblios and authorities without an `nm2db_records` entry, so successive batches continue with the remaining records. Select `Force reindex already normalized records` only for a deliberate full reindex; forced batches retain their progress by record ID and can be restarted explicitly.
+
+If MARCXML is missing or invalid, the record is marked with `999$a` (`MARCXML missing` or `MARCXML invalid`). This prevents a malformed source record from blocking later batches; a successful normalization after the source MARCXML is corrected replaces the marker.
 
 The normalized tables use `utf8mb4` starting with version 1.0.2. This is required to preserve all MARC Unicode characters. Updating the plugin does not automatically convert existing tables because those tables can be very large. Existing installations whose `nm2db_*` tables use `latin1` must be migrated during a planned maintenance window and normalized again from the source MARCXML. Converting already normalized values alone cannot restore characters that were previously replaced with `?`.
 

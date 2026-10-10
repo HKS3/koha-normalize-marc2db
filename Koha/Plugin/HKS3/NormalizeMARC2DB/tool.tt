@@ -29,8 +29,20 @@ li {
         <input type="hidden" name="method" value="[% METHOD %]"/>
 
         <ul>
-            <li> <button type="submit" name="run" value="NormalizeAll"> Normalize all records </button>
-            <li> <button type="submit" name="run" value="NormalizeAllNoAuths"> Normalize all records except authorities </button>
+            <li>
+                <label for="limit">Records per run</label>
+                <input id="limit" type="number" name="limit" min="1" step="1" value="1000" required>
+                <label><input type="checkbox" name="skip_authorities" value="1"> Skip authorities</label>
+                <label><input type="checkbox" name="force" value="1"> Force reindex already normalized records</label>
+                <button type="submit" name="run" value="NormalizeAll"> Normalize next batch </button>
+                <p>
+                    Without force, only records without an nm2db entry are normalized. Forced batches
+                    continue after the last processed ID; current forced reindex phase: [% force_normalize_phase %].
+                </p>
+            </li>
+            <li>
+                <button type="submit" name="run" value="ResetForceNormalize"> Restart forced reindex from the beginning </button>
+            </li>
             <li> <button type="submit" name="run" value="VerifyAll"> Verify normalized data against stored marcxml </button>
             <li> <button type="submit" name="run" value="ViewChangedMetadata">
                 Check what UpdateChangedMetadata would change

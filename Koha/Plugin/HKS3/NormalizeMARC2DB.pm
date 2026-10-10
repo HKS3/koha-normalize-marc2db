@@ -29,7 +29,7 @@ use Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::NormalizeAll;
 use Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::UpdateChangedMetadata;
 use Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::VerifyAll;
 
-our $VERSION = "1.0.2";
+our $VERSION = "1.0.4";
 
 our $metadata = {
     name            => 'Normalize MARC to DB',
@@ -37,7 +37,7 @@ our $metadata = {
     description     => 'Normalize MARC XML into Database tables',
     namespace       => 'marc2db',
     date_authored   => '2025-04-01',
-    date_updated    => '2026-09-25',
+    date_updated    => '2026-10-10',
     minimum_version => '23.11',
     maximum_version => undef,
     version         => $VERSION,
@@ -75,12 +75,32 @@ sub tool {
     my $cgi = CGI->new;
 
     if ($self->{cgi}->param('run')) {
+        if ($self->{cgi}->param('run') eq 'ResetForceNormalize') {
+            $self->store_data({
+                force_normalize_phase         => 'biblio',
+                force_normalize_biblionumber  => 0,
+                force_normalize_authid        => 0,
+            });
+            print $self->{cgi}->redirect($self->{cgi}->url({ query => 1 }));
+            return;
+        }
+
+        my $limit = $self->{cgi}->param('limit');
+        die 'Limit must be a positive integer'
+            unless defined $limit && $limit =~ /\A[1-9]\d*\z/;
+
+        my %normalize_args = (
+            limit            => $limit,
+            force            => $self->{cgi}->param('force') ? 1 : 0,
+            skip_authorities => $self->{cgi}->param('skip_authorities') ? 1 : 0,
+        );
         my %jobs = (
             NormalizeAll => sub {
-                Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::NormalizeAll->new->enqueue({})
+                Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::NormalizeAll->new->enqueue(\%normalize_args)
             },
             NormalizeAllNoAuths => sub {
                 Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::NormalizeAll->new->enqueue({
+                    %normalize_args,
                     skip_authorities => 1,
                 })
             },
@@ -104,6 +124,9 @@ sub tool {
         print $self->{cgi}->redirect("/cgi-bin/koha/admin/background_jobs.pl?op=view&id=$id");
     } else {
         my $template = $self->get_template({ file => 'tool.tt' });
+        $template->param(
+            force_normalize_phase => $self->retrieve_data('force_normalize_phase') || 'biblio',
+        );
         $self->output_html($template->output);
     }
 }
