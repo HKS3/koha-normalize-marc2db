@@ -41,6 +41,8 @@ to see differences between SQL Tables and the MARCXML
 
 after installing you have to run the plugin tool ONCE to normalize all biblio and authority data to the tables. Go to the Plugins page and under Action choose "Run Tool"
 
+The normalized tables use `utf8mb4` starting with version 1.0.2. This is required to preserve all MARC Unicode characters. Updating the plugin does not automatically convert existing tables because those tables can be very large. Existing installations whose `nm2db_*` tables use `latin1` must be migrated during a planned maintenance window and normalized again from the source MARCXML. Converting already normalized values alone cannot restore characters that were previously replaced with `?`.
+
 ![image](https://github.com/user-attachments/assets/61503e27-c615-4e2b-beaa-b5e4ef029591)
 
 this may take quite a long time if you have many records, but only needs to be done once.

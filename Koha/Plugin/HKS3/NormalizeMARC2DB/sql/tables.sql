@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS nm2db_records (
     CONSTRAINT CHK_Biblio_Or_Auth CHECK (biblionumber is null or authid is null),
     CONSTRAINT CHK_Biblio_Correct_Type CHECK (if(biblionumber is not null, type = 'biblio', true)),
     CONSTRAINT CHK_Auth_Correct_Type CHECK (if(authid is not null, type = 'authority', true))
-);
+) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ---
 CREATE TABLE IF NOT EXISTS nm2db_fields (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS nm2db_fields (
     indicator2 CHAR(1),
     sequence INT DEFAULT 0,
     FOREIGN KEY (record_id) REFERENCES nm2db_records(id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ---
 CREATE TABLE IF NOT EXISTS nm2db_subfields (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -29,10 +29,10 @@ CREATE TABLE IF NOT EXISTS nm2db_subfields (
     value TEXT,
     sequence INT DEFAULT 0,
     FOREIGN KEY (field_id) REFERENCES nm2db_fields(id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ---
--- MySQL Warning: Specified key was too long; max key length is 3072 bytes
-create index nm2db_subfields_value_ind on nm2db_subfields(value);
+-- Keep the index within InnoDB's 3072-byte key limit for utf8mb4.
+create index nm2db_subfields_value_ind on nm2db_subfields(value(768));
 ---
 create index nm2db_subfields_code_ind on nm2db_subfields(code);
 ---
