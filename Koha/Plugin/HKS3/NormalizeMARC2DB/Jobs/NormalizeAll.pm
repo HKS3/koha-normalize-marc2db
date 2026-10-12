@@ -206,6 +206,22 @@ sub process {
         _store_force_progress($dbh, $progress);
     }
 
+    # Update the current place if we aren't forcing reindex, but just indexing in batches        
+    my $sql = 'SELECT MIN(b.biblionumber) FROM biblio b '
+        . 'LEFT JOIN nm2db_records nr ON nr.biblionumber = b.biblionumber '
+        . 'WHERE nr.id IS NULL';
+    my ($last_unindexed_biblionumber) = $dbh->selectrow_array($sql,undef);
+    $sql = 'SELECT MIN(ah.authid) FROM auth_header ah '
+	. 'LEFT JOIN nm2db_records nr ON nr.authid = ah.authid '
+	. 'WHERE nr.id IS NULL';
+    my ($last_unindexed_authid) = $dbh->selectrow_array($sql,undef);
+    my $sth = $dbh->prepare(
+        'REPLACE INTO plugin_data SET plugin_class = ?, plugin_key = ?, plugin_value = ?'
+    );
+    $sth->execute($plugin_class, "lowest_unindexed_biblionumber", $last_unindexed_biblionumber);
+    $sth->execute($plugin_class, "lowest_unindexed_authid", $last_unindexed_authid);
+
+
     $self->finish({ messages => \@errors });
 }
 

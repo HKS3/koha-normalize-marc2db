@@ -73,17 +73,15 @@ sub template_include_paths {
 sub tool {
     my ( $self ) = @_;
     my $cgi = CGI->new;
+    my $dbh = C4::Context->dbh;
 
-    if ($self->{cgi}->param('run')) {
-        if ($self->{cgi}->param('run') eq 'ResetForceNormalize') {
-            $self->store_data({
-                force_normalize_phase         => 'biblio',
-                force_normalize_biblionumber  => 0,
-                force_normalize_authid        => 0,
-            });
-            print $self->{cgi}->redirect($self->{cgi}->url({ query => 1 }));
-            return;
-        }
+    if ($self->{cgi}->param('run') && $self->{cgi}->param('run') eq 'ResetForceNormalize') {
+        $self->store_data({
+	    force_normalize_phase         => 'biblio',
+	    force_normalize_biblionumber  => 0,
+	    force_normalize_authid        => 0,
+        });
+    } elsif ($self->{cgi}->param('run')) {
 
         my $limit = $self->{cgi}->param('limit');
         die 'Limit must be a positive integer'
@@ -122,13 +120,18 @@ sub tool {
         }
         my $id = $job->();
         print $self->{cgi}->redirect("/cgi-bin/koha/admin/background_jobs.pl?op=view&id=$id");
-    } else {
-        my $template = $self->get_template({ file => 'tool.tt' });
-        $template->param(
-            force_normalize_phase => $self->retrieve_data('force_normalize_phase') || 'biblio',
-        );
-        $self->output_html($template->output);
-    }
+    } 
+    my $template = $self->get_template({ file => 'tool.tt' });
+
+    $template->param(
+        force_normalize_phase => $self->retrieve_data('force_normalize_phase') || 'biblio',
+        force_normalize_biblionumber => $self->retrieve_data('force_normalize_biblionumber') || 0,
+        force_normalize_authid => $self->retrieve_data('force_normalize_authid') || 0,
+        lowest_unindexed_biblionumber => $self->retrieve_data('lowest_unindexed_biblionumber') || 0,
+        lowest_unindexed_authid => $self->retrieve_data('lowest_unindexed_authid') || 0,
+    );
+    $self->output_html($template->output);
+
 }
 
 sub install {
