@@ -45,7 +45,11 @@ The tool normalizes up to the selected number of records per run. By default it 
 
 If MARCXML is missing or invalid, the record is marked with `999$a` (`MARCXML missing` or `MARCXML invalid`). This prevents a malformed source record from blocking later batches; a successful normalization after the source MARCXML is corrected replaces the marker.
 
-The normalized tables use `utf8mb4` starting with version 1.0.2. This is required to preserve all MARC Unicode characters. Updating the plugin does not automatically convert existing tables because those tables can be very large. Existing installations whose `nm2db_*` tables use `latin1` must be migrated during a planned maintenance window and normalized again from the source MARCXML. Converting already normalized values alone cannot restore characters that were previously replaced with `?`.
+The normalized tables use `utf8mb4` starting with version 1.0.2. This is required to preserve all MARC Unicode characters. When upgrading to version 1.0.5 or later, the plugin automatically converts legacy `latin1` or `utf8mb3` `nm2db_records`, `nm2db_fields`, and `nm2db_subfields` tables to `utf8mb4_unicode_ci`. It also replaces legacy prefixes on `nm2db_subfields.value` with the `utf8mb4`-safe 768-character prefix.
+
+The upgrade creates the change queue if missing, preserves existing queued edits, and installs the current `nm2db_v_record` view. Legacy `nm2db_records.changed = 1` flags are copied to the queue once; the old column is retained. A database advisory lock prevents concurrent upgrades. If a step fails, Koha keeps the old installed version and the migration can be retried (DDL statements are not transactional). The upgrade does not install database write triggers or start normalization jobs.
+
+The conversion rebuilds the affected tables. Schedule the plugin upgrade in a maintenance window with enough free database storage and do not run normalization jobs concurrently. After the upgrade, run a forced reindex in batches from the source MARCXML. Converting existing values alone cannot restore characters that were previously replaced with `?`.
 
 ![image](https://github.com/user-attachments/assets/61503e27-c615-4e2b-beaa-b5e4ef029591)
 

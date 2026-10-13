@@ -29,7 +29,7 @@ use Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::NormalizeAll;
 use Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::UpdateChangedMetadata;
 use Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::VerifyAll;
 
-our $VERSION = "1.0.4";
+our $VERSION = "1.0.5";
 
 our $metadata = {
     name            => 'Normalize MARC to DB',
@@ -147,6 +147,130 @@ sub install {
     };
 
     return 1;
+}
+
+sub upgrade {
+    my ($self) = @_;
+
+    my $dbh = C4::Context->dbh;
+    local $dbh->{RaiseError} = 1;
+    my ($locked) = $dbh->selectrow_array(
+        q{SELECT GET_LOCK(CONCAT('nm2db_upgrade:', MD5(DATABASE())), 0)}
+    );
+    die 'Cannot upgrade NormalizeMARC2DB: another upgrade is running'
+        unless $locked;
+
+    my $success = eval { $self->_upgrade_schema($dbh); 1 };
+    my $error = $@;
+    my $released = eval {
+        $dbh->selectrow_array(q{SELECT RELEASE_LOCK(CONCAT('nm2db_upgrade:', MD5(DATABASE())))});
+        1;
+    };
+    die $error unless $success;
+    die $@ unless $released;
+
+    return 1;
+}
+
+sub _upgrade_schema {
+    my ($self, $dbh) = @_;
+    my @tables = qw(nm2db_records nm2db_fields nm2db_subfields);
+
+    for my $table (@tables) {
+        die "Cannot upgrade NormalizeMARC2DB: table $table is missing"
+            unless _table_collation($dbh, $table);
+    }
+
+    # A legacy latin1 index prefix of 3072 bytes exceeds InnoDB's 3072-byte
+    # limit after the value column is converted to utf8mb4. Drop it before
+    # the conversion and recreate the current 768-character index afterwards.
+    my ($value_index_exists, $value_index_prefix)
+        = _index_prefix($dbh, 'nm2db_subfields', 'nm2db_subfields_value_ind');
+    if ($value_index_exists && (!defined $value_index_prefix || $value_index_prefix != 768)) {
+        $dbh->do('ALTER TABLE nm2db_subfields DROP INDEX nm2db_subfields_value_ind');
+    }
+
+    for my $table (@tables) {
+        my ($legacy_columns) = $dbh->selectrow_array(
+            q{SELECT COUNT(*) FROM information_schema.COLUMNS
+              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?
+                AND COLLATION_NAME IS NOT NULL AND COLLATION_NAME <> 'utf8mb4_unicode_ci'},
+            undef, $table,
+        );
+        next if _table_collation($dbh, $table) eq 'utf8mb4_unicode_ci' && !$legacy_columns;
+        $dbh->do("ALTER TABLE $table CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+    }
+
+    ($value_index_exists, $value_index_prefix)
+        = _index_prefix($dbh, 'nm2db_subfields', 'nm2db_subfields_value_ind');
+    if (!$value_index_exists || !defined $value_index_prefix || $value_index_prefix != 768) {
+        $dbh->do('ALTER TABLE nm2db_subfields DROP INDEX nm2db_subfields_value_ind')
+            if $value_index_exists;
+        $dbh->do('ALTER TABLE nm2db_subfields ADD INDEX nm2db_subfields_value_ind (value(768))');
+    }
+
+    # Never use CREATE OR REPLACE TABLE here: it would discard queued edits.
+    $dbh->do($self->mbf_read('sql/change_queue.sql'));
+
+    if (($self->retrieve_data('schema_version') || '') ne '1.0.5') {
+        my ($has_changed) = $dbh->selectrow_array(
+            q{SELECT COUNT(*) FROM information_schema.COLUMNS
+              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'nm2db_records'
+                AND COLUMN_NAME = 'changed'}
+        );
+        if ($has_changed) {
+            $dbh->do(q{INSERT INTO nm2db_change_queue (record_id)
+                       SELECT id FROM nm2db_records WHERE changed = 1
+                       ON DUPLICATE KEY UPDATE record_id = VALUES(record_id)});
+        }
+        $dbh->do($self->mbf_read('sql/view.sql'));
+    } else {
+        my ($has_view) = $dbh->selectrow_array(
+            q{SELECT COUNT(*) FROM information_schema.TABLES
+              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'nm2db_v_record'}
+        );
+        $dbh->do($self->mbf_read('sql/view.sql')) unless $has_view;
+    }
+
+    $self->store_data({ schema_version => '1.0.5' });
+
+    return 1;
+}
+
+sub _table_collation {
+    my ($dbh, $table) = @_;
+
+    return $dbh->selectrow_array(
+        q{
+            SELECT TABLE_COLLATION
+            FROM information_schema.TABLES
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = ?
+        },
+        undef,
+        $table,
+    );
+}
+
+sub _index_prefix {
+    my ($dbh, $table, $index) = @_;
+
+    my ($prefix, $exists) = $dbh->selectrow_array(
+        q{
+            SELECT SUB_PART, 1
+            FROM information_schema.STATISTICS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = ?
+              AND INDEX_NAME = ?
+            ORDER BY SEQ_IN_INDEX
+            LIMIT 1
+        },
+        undef,
+        $table,
+        $index,
+    );
+
+    return ($exists, $prefix);
 }
 
 sub uninstall {
