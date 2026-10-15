@@ -25,6 +25,20 @@ This approach aligns with best practices for database normalization and can subs
 
 see https://bugs.koha-community.org/bugzilla3/show_bug.cgi?id=39557
 
+# Changes
+
+## 1.0.6 (2026-10-15)
+
+- Fix the forced reindex reset button: reset the phase and both record ID cursors, then display the tool directly instead of redirecting back to the reset request. This resets progress only; it does not delete normalized data or start a job.
+- Show the current forced reindex phase and the last processed biblio or authority ID in the tool.
+- After each batch, store and display the lowest biblio and authority IDs that still have no `nm2db_records` entry. These are snapshots from the last batch, not live progress indicators; the corresponding line is hidden when no records are missing.
+- Group the batch settings and status information more clearly and HTML-escape displayed template values.
+- Extend the batch unit test to cover the new status queries and stored progress values.
+
+The two additional status queries run after every batch, including forced batches and runs with `Skip authorities` selected. They do not normalize extra records, but can add query time on large catalogs. Batch limits and record selection are unchanged.
+
+The database schema version remains 1.0.5. Upgrading an already migrated 1.0.5 installation checks the existing schema without rebuilding correctly converted tables or starting a reindex. Upgrades from older installations still run the automatic migration described below.
+
 # Installation and usage
 
 please download the koha plugin as kpz here https://github.com/HKS3/koha-normalize-marc2db/releases use the latest version

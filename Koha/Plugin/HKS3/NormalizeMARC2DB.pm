@@ -29,7 +29,7 @@ use Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::NormalizeAll;
 use Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::UpdateChangedMetadata;
 use Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::VerifyAll;
 
-our $VERSION = "1.0.5";
+our $VERSION = "1.0.6";
 
 our $metadata = {
     name            => 'Normalize MARC to DB',
@@ -37,7 +37,7 @@ our $metadata = {
     description     => 'Normalize MARC XML into Database tables',
     namespace       => 'marc2db',
     date_authored   => '2025-04-01',
-    date_updated    => '2026-10-10',
+    date_updated    => '2026-10-15',
     minimum_version => '23.11',
     maximum_version => undef,
     version         => $VERSION,

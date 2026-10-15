@@ -50,6 +50,22 @@ require 'Koha/Plugin/HKS3/NormalizeMARC2DB/Jobs/NormalizeAll.pm';
         my ($self, $sql) = @_;
         return bless { dbh => $self, sql => $sql }, 'TestSTH';
     }
+
+    sub selectrow_array {
+        my ($self, $sql) = @_;
+
+        if ($sql =~ /SELECT MIN\(b\.biblionumber\) FROM biblio b/) {
+            my @missing = sort { $a <=> $b }
+                grep { !$self->{normalized_biblios}{$_} } $self->{biblios}->@*;
+            return $missing[0];
+        }
+        if ($sql =~ /SELECT MIN\(ah\.authid\) FROM auth_header ah/) {
+            my @missing = sort { $a <=> $b }
+                grep { !$self->{normalized_authorities}{$_} } $self->{authorities}->@*;
+            return $missing[0];
+        }
+        die "Unexpected SQL: $sql";
+    }
 }
 
 {
@@ -116,9 +132,12 @@ my $job = bless {}, 'Koha::Plugin::HKS3::NormalizeMARC2DB::Jobs::NormalizeAll';
 $job->process({ limit => 2 });
 is_deeply(\@biblio_calls, [1, 3], 'first normal batch processes only missing biblios');
 is_deeply(\@authority_calls, [], 'first normal batch respects the total limit');
+is($dbh->{plugin_data}{lowest_unindexed_biblionumber}, undef, 'no missing biblio ID remains after the first batch');
+is($dbh->{plugin_data}{lowest_unindexed_authid}, 10, 'first batch records the still-missing authority ID');
 
 $job->process({ limit => 2 });
 is_deeply(\@authority_calls, [10], 'next normal batch processes the remaining authority');
+is($dbh->{plugin_data}{lowest_unindexed_authid}, undef, 'missing authority status is cleared after normalization');
 
 @biblio_calls = ();
 @authority_calls = ();
@@ -132,5 +151,18 @@ is_deeply(\@authority_calls, [10], 'second forced batch uses remaining capacity 
 
 $job->process({ limit => 2, force => 1 });
 is($dbh->{plugin_data}{force_normalize_phase}, 'done', 'forced reindex records completion');
+
+$dbh = TestDB->new;
+@biblio_calls = ();
+@authority_calls = ();
+$job->process({ limit => 1 });
+is($dbh->{plugin_data}{lowest_unindexed_biblionumber}, 3, 'partial batch records the next missing biblio ID');
+is($dbh->{plugin_data}{lowest_unindexed_authid}, 10, 'partial batch records the next missing authority ID');
+
+$job->process({ limit => 2, force => 1, skip_authorities => 1 });
+is_deeply(\@biblio_calls, [1, 1, 2], 'forced batch still respects its record limit');
+is_deeply(\@authority_calls, [], 'status queries do not normalize skipped authorities');
+is($dbh->{plugin_data}{lowest_unindexed_biblionumber}, 3, 'forced batch stores the missing biblio status');
+is($dbh->{plugin_data}{lowest_unindexed_authid}, 10, 'skipped authority remains visible in the status');
 
 done_testing;
